@@ -30,9 +30,13 @@ class AuthViewModel : ViewModel() {
             }
 
             authRepository.me()
-                .onSuccess { _authState.value = AuthState.Authenticated(it) }
+                .onSuccess {
+                    _authState.value = AuthState.Authenticated(it)
+                    Dependencies.currentUser.value = it
+                }
                 .onFailure {
                     authRepository.logout()
+                    Dependencies.currentUser.value = null
                     _authState.value = AuthState.Unauthenticated
                 }
         }
@@ -42,7 +46,10 @@ class AuthViewModel : ViewModel() {
         viewModelScope.launch {
             _error.value = null
             authRepository.login(email, password)
-                .onSuccess { _authState.value = AuthState.Authenticated(it) }
+                .onSuccess {
+                    _authState.value = AuthState.Authenticated(it)
+                    Dependencies.currentUser.value = it
+                }
                 .onFailure {
                     _authState.value = AuthState.Unauthenticated
                     _error.value = authRepository.mapErrorMessage(it)
@@ -65,6 +72,7 @@ class AuthViewModel : ViewModel() {
 
     fun logout() {
         authRepository.logout()
+        Dependencies.currentUser.value = null
         _authState.value = AuthState.Unauthenticated
     }
 

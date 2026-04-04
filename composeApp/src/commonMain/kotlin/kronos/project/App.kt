@@ -20,6 +20,7 @@ import kronos.project.ui.theme.CivicLensTheme
 
 @Serializable data class CreateIssue(val lat: String, val lon: String)
 @Serializable data class IssueDetail(val id: String)
+@Serializable data class ComplaintThread(val pinId: String)
 @Serializable object Map
 @Serializable object Profile
 @Serializable object Settings
@@ -78,7 +79,7 @@ fun App() {
             }
             composable<Map> {
                 MapScreen(
-                    onIssueClick = { id -> navController.navigate(IssueDetail(id)) },
+                    onIssueClick = { id -> navController.navigate(ComplaintThread(id)) },
                     onCreateIssue = { lat, lon -> navController.navigate(CreateIssue(lat.toString(), lon.toString())) },
                     onProfileClick = { navController.navigate(Profile) }
                 )
@@ -127,6 +128,13 @@ fun App() {
             composable<Settings> {
                 SettingsScreen(
                     onBack = { navController.popBackStack() }
+                )
+            }
+            composable<ComplaintThread> { backStackEntry ->
+                val args: ComplaintThread = backStackEntry.toRoute()
+                ComplaintThreadSheet(
+                    pinId = args.pinId,
+                    onDismiss = { navController.popBackStack() },
                 )
             }
         }
