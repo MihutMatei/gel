@@ -16,10 +16,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kronos.project.MapScreen as PlatformMapScreen
 import kronos.project.map.MapDefaults
-import kronos.project.map.MapFacade
 import kronos.project.map.MapMarker
 import kronos.project.map.MapMarkerCard
 import kronos.project.map.MapThreadPost
@@ -185,26 +187,36 @@ fun MapScreen(
     val pins by pinViewModel.pins.collectAsState()
     val loading by pinViewModel.loading.collectAsState()
     val error by pinViewModel.error.collectAsState()
+    val lifecycleOwner = LocalLifecycleOwner.current
 
-    val markers = if (pins.isEmpty()) {
-        demoMarkers
-    } else {
-        pins.map { pin ->
-            MapMarker(
-                id = pin.id,
-                latitude = pin.latitude,
-                longitude = pin.longitude,
-                title = pin.title,
-                card = MapMarkerCard(
-                    title = pin.title,
-                    mainPost = MapThreadPost(
-                        author = "reporter",
-                        content = pin.description,
-                    ),
-                ),
-            )
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                pinViewModel.refreshPins()
+            }
         }
+
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
+
+    val liveMarkers = pins.map { pin ->
+        MapMarker(
+            id = pin.id,
+            latitude = pin.latitude,
+            longitude = pin.longitude,
+            title = pin.title,
+            card = MapMarkerCard(
+                title = pin.title,
+                mainPost = MapThreadPost(
+                    author = "reporter",
+                    content = pin.description,
+                ),
+            ),
+        )
+    }
+
+    val markers = (demoMarkers + liveMarkers).distinctBy { it.id }
 
     Scaffold(
         topBar = {

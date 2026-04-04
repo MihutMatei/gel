@@ -29,6 +29,10 @@ class WebMapHandle(private val map: MapLibreGl.Map) {
 
     fun setMapClickHandler(onMapClick: (Double, Double) -> Unit) {
         map.on("click") { event ->
+            val target = event.asDynamic().originalEvent?.target
+            val clickedMarker = (target?.closest?.call(target, ".maplibregl-marker") != null) as? Boolean ?: false
+            if (clickedMarker) return@on
+
             val coordinates = event.lngLat
             onMapClick(coordinates.lat as Double, coordinates.lng as Double)
         }

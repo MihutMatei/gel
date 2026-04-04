@@ -3,7 +3,10 @@ package kronos.project
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.pm.PackageManager
+import android.os.Handler
+import android.os.Looper
 import android.view.ViewGroup
+import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.foundation.layout.Box
@@ -26,6 +29,7 @@ actual fun PlatformMapHost(
     onMapClick: (Double, Double) -> Unit,
 ) {
     val webViewState = remember { mutableStateOf<WebView?>(null) }
+    val onMapClickState by rememberUpdatedState(onMapClick)
     val mapTilerApiKey = stringResource(R.string.maptiler_api_key)
     val html = remember(markers, mapTilerApiKey) { androidMapHtml(mapTilerApiKey, markers) }
 
@@ -39,6 +43,10 @@ actual fun PlatformMapHost(
                         ViewGroup.LayoutParams.MATCH_PARENT,
                     )
                     webViewClient = WebViewClient()
+                    addJavascriptInterface(
+                        AndroidMapBridge { lat, lng -> onMapClickState(lat, lng) },
+                        "AndroidMapBridge",
+                    )
                     settings.javaScriptEnabled = true
                     settings.domStorageEnabled = true
                     loadDataWithBaseURL(
@@ -172,6 +180,19 @@ private fun androidMapHtml(mapTilerApiKey: String, markers: List<MapMarker>): St
 
           map.addControl(new maplibregl.NavigationControl({ showZoom: false, showCompass: false }), "top-right");
 
+          const emitMapTap = (lat, lng) => {
+            const bridge = window.AndroidMapBridge;
+            if (bridge && typeof bridge.onMapTap === "function") {
+              bridge.onMapTap(lat, lng);
+            }
+          };
+
+          const isMarkerTarget = (event) => {
+            const originalEvent = event && event.originalEvent;
+            const target = originalEvent && originalEvent.target;
+            return !!(target && target.closest && target.closest(".maplibregl-marker"));
+          };
+
           const markers = $markersJson;
           const escapeHtml = (value) => String(value || "")
             .replace(/&/g, "&amp;")
@@ -221,6 +242,12 @@ private fun androidMapHtml(mapTilerApiKey: String, markers: List<MapMarker>): St
               .addTo(map);
           });
 
+          map.on("click", (event) => {
+            if (isMarkerTarget(event)) return;
+            emitMapTap(event.lngLat.lat, event.lngLat.lng);
+          });
+
+
           map.on("load", () => {
 
             const style = map.getStyle();
@@ -256,3 +283,17 @@ private fun String.toJsStringLiteral(): String = this
     .replace("\"", "\\\"")
     .replace("\n", "\\n")
     .replace("\r", "")
+
+private class AndroidMapBridge(
+    private val onMapTapCallback: (Double, Double) -> Unit,
+) {
+    private val mainHandler = Handler(Looper.getMainLooper())
+
+    @JavascriptInterface
+    fun onMapTap(lat: Double, lng: Double) {
+        mainHandler.post {
+            onMapTapCallback(lat, lng)
+        }
+    }
+}
+

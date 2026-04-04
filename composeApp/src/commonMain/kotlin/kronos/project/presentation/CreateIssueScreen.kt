@@ -1,6 +1,5 @@
 package kronos.project.presentation
 
-import androidx.compose.animation.*
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -66,7 +65,7 @@ fun CreateIssueScreen(
             OutlinedTextField(
                 value = title,
                 onValueChange = { if (it.length <= 50) title = it },
-                label = { Text("Short Title") },
+                label = { Text("Issue Name") },
                 placeholder = { Text("e.g., Pothole on Main St") },
                 modifier = Modifier.fillMaxWidth(),
                 leadingIcon = { Icon(Icons.Default.Title, contentDescription = null) },
@@ -99,7 +98,7 @@ fun CreateIssueScreen(
                     value = category,
                     onValueChange = {},
                     readOnly = true,
-                    label = { Text("Category") },
+                    label = { Text("Type of Problem") },
                     leadingIcon = { Icon(Icons.Default.Category, contentDescription = null) },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                     modifier = Modifier.menuAnchor().fillMaxWidth()
@@ -137,7 +136,7 @@ fun CreateIssueScreen(
             OutlinedTextField(
                 value = description,
                 onValueChange = { if (it.length <= 500) description = it },
-                label = { Text("Detailed Description") },
+                label = { Text("Description") },
                 placeholder = { Text("Describe what's wrong and its impact...") },
                 modifier = Modifier.fillMaxWidth(),
                 minLines = 4,

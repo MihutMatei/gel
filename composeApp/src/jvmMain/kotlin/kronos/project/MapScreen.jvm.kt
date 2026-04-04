@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.awt.SwingPanel
 import javafx.application.Platform
@@ -13,6 +14,7 @@ import javafx.scene.web.WebView
 import kronos.project.map.MapDefaults
 import kronos.project.map.MapMarker
 import java.awt.BorderLayout
+import java.awt.EventQueue
 import javax.swing.JPanel
 
 @Composable
@@ -22,16 +24,19 @@ actual fun PlatformMapHost(
     onMapClick: (Double, Double) -> Unit,
 ) {
     val mapTilerApiKey = remember { resolveDesktopMapTilerKey() }
+    val onMapClickState = rememberUpdatedState(onMapClick)
     val html = remember(markers, mapTilerApiKey) { desktopMapHtml(mapTilerApiKey, markers) }
 
     SwingPanel(
         modifier = modifier.fillMaxSize(),
         factory = {
             DesktopMapPanel().apply {
+                setOnMapTapListener { lat, lng -> onMapClickState.value(lat, lng) }
                 loadHtml(html)
             }
         },
         update = {
+            it.setOnMapTapListener { lat, lng -> onMapClickState.value(lat, lng) }
             it.loadHtml(html)
         },
     )
@@ -51,15 +56,33 @@ actual fun rememberLocationPermissionGranted(): Boolean = true
 private class DesktopMapPanel : JPanel(BorderLayout()) {
     private val fxPanel = JFXPanel()
     private var webView: WebView? = null
+    private var onMapTap: ((Double, Double) -> Unit)? = null
 
     init {
         add(fxPanel, BorderLayout.CENTER)
         Platform.setImplicitExit(false)
         Platform.runLater {
             val view = WebView()
+            view.engine.setOnAlert { event ->
+                val payload = event.data ?: return@setOnAlert
+                if (!payload.startsWith("GEL_MAP_TAP:")) return@setOnAlert
+
+                val coords = payload.removePrefix("GEL_MAP_TAP:").split(',')
+                if (coords.size != 2) return@setOnAlert
+
+                val lat = coords[0].toDoubleOrNull() ?: return@setOnAlert
+                val lng = coords[1].toDoubleOrNull() ?: return@setOnAlert
+                EventQueue.invokeLater {
+                    onMapTap?.invoke(lat, lng)
+                }
+            }
             webView = view
             fxPanel.scene = Scene(view)
         }
+    }
+
+    fun setOnMapTapListener(listener: (Double, Double) -> Unit) {
+        onMapTap = listener
     }
 
     fun loadHtml(html: String) {
@@ -161,6 +184,16 @@ private fun desktopMapHtml(mapTilerApiKey: String, markers: List<MapMarker>): St
 
           map.addControl(new maplibregl.NavigationControl({ showZoom: false, showCompass: false }), "top-right");
 
+          const emitMapTap = (lat, lng) => {
+            alert(`GEL_MAP_TAP:${'$'}{lat},${'$'}{lng}`);
+          };
+
+          const isMarkerTarget = (event) => {
+            const originalEvent = event && event.originalEvent;
+            const target = originalEvent && originalEvent.target;
+            return !!(target && target.closest && target.closest(".maplibregl-marker"));
+          };
+
           const markers = $markersJson;
           const escapeHtml = (value) => String(value || "")
             .replace(/&/g, "&amp;")
@@ -209,6 +242,12 @@ private fun desktopMapHtml(mapTilerApiKey: String, markers: List<MapMarker>): St
               .setPopup(popup)
               .addTo(map);
           });
+
+          map.on("click", (event) => {
+            if (isMarkerTarget(event)) return;
+            emitMapTap(event.lngLat.lat, event.lngLat.lng);
+          });
+
 
           map.on("load", () => {
             const style = map.getStyle();

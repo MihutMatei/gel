@@ -1,20 +1,16 @@
 package kronos.project
 
-import kronos.project.data.repository.FakeCommentRepository
-import kronos.project.data.repository.FakeGamificationRepository
-import kronos.project.data.repository.FakeIssueRepository
-import kronos.project.data.repository.AuthRepository
-import kronos.project.data.repository.PinRepository
-import kronos.project.data.repository.SettingsRepository
-import kronos.project.data.repository.UserRepository
+import kotlinx.coroutines.flow.MutableStateFlow
 import kronos.project.data.remote.AppHttpClient
 import kronos.project.data.remote.TokenStorage
+import kronos.project.data.repository.*
 import kronos.project.domain.model.UserRole
 import kronos.project.domain.usecase.*
-import kotlinx.coroutines.flow.MutableStateFlow
+import kronos.project.domain.usecase.CreateIssue
 
 object Dependencies {
     val currentUserRole = MutableStateFlow(UserRole.CITIZEN)
+    val currentUserId = MutableStateFlow<String?>(null)
     val isDarkMode = MutableStateFlow<Boolean?>(null) // null means follow system
 
     val tokenStorage = TokenStorage()

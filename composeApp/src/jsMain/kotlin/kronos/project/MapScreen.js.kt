@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
@@ -26,6 +27,7 @@ actual fun PlatformMapHost(
 ) {
     val containerRef = remember { ensureMapContainer(mapContainerId) }
     var mapHandle by remember { mutableStateOf<WebMapHandle?>(null) }
+    val onMapClickState = rememberUpdatedState(onMapClick)
 
     Box(modifier = modifier.fillMaxSize()) {}
 
@@ -37,8 +39,8 @@ actual fun PlatformMapHost(
         mapHandle?.setMarkers(markers)
     }
 
-    LaunchedEffect(mapHandle, onMapClick) {
-        mapHandle?.setMapClickHandler(onMapClick)
+    LaunchedEffect(mapHandle) {
+        mapHandle?.setMapClickHandler { lat, lng -> onMapClickState.value(lat, lng) }
     }
 
     DisposableEffect(Unit) {
