@@ -1,3 +1,6 @@
+.idea
+.kotlin
+
 # Android Studio
 /*/build/
 /*/local.properties
@@ -77,3 +80,5 @@ build/
 
 # Local configuration file
 local.properties
+.env
+!.env.example
