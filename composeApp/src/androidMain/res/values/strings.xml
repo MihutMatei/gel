@@ -1,6 +1,3 @@
 <resources>
     <string name="app_name">Gel</string>
-    <!-- TODO: replace with your public MapTiler browser key. -->
-    <!-- TODO: restrict this key by domain/referrer in MapTiler dashboard. -->
-    <string name="maptiler_api_key">uAsCBryEXEqfquNWRvXx</string>
 </resources>

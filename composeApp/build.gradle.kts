@@ -1,5 +1,26 @@
+import org.gradle.internal.os.OperatingSystem
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.util.*
+
+val javafxVersion = "21.0.2"
+val javafxPlatform = when {
+    OperatingSystem.current().isLinux -> "linux"
+    OperatingSystem.current().isWindows -> "win"
+    OperatingSystem.current().isMacOsX -> "mac"
+    else -> error("Unsupported OS for JavaFX desktop map host")
+}
+
+fun loadDotEnv(rootDir: File): Map<String, String> {
+    val envFile = File(rootDir, ".env")
+    if (!envFile.exists()) return emptyMap()
+    val props = Properties()
+    envFile.inputStream().use(props::load)
+    return props.stringPropertyNames().associateWith { key -> props.getProperty(key).orEmpty() }
+}
+
+val dotEnv = loadDotEnv(rootProject.projectDir)
+val mapTilerApiKey = (dotEnv["MAPTILER_API_KEY"] ?: System.getenv("MAPTILER_API_KEY") ?: "").trim()
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -45,6 +66,12 @@ kotlin {
         jvmMain.dependencies {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutinesSwing)
+            implementation("org.openjfx:javafx-base:$javafxVersion:$javafxPlatform")
+            implementation("org.openjfx:javafx-graphics:$javafxVersion:$javafxPlatform")
+            implementation("org.openjfx:javafx-controls:$javafxVersion:$javafxPlatform")
+            implementation("org.openjfx:javafx-media:$javafxVersion:$javafxPlatform")
+            implementation("org.openjfx:javafx-web:$javafxVersion:$javafxPlatform")
+            implementation("org.openjfx:javafx-swing:$javafxVersion:$javafxPlatform")
         }
     }
 }
@@ -59,6 +86,7 @@ android {
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1
         versionName = "1.0"
+        resValue("string", "maptiler_api_key", mapTilerApiKey)
     }
     packaging {
         resources {
@@ -83,11 +111,33 @@ dependencies {
 compose.desktop {
     application {
         mainClass = "kronos.project.MainKt"
-
+        if (mapTilerApiKey.isNotBlank()) {
+            jvmArgs("-DMAPTILER_API_KEY=$mapTilerApiKey")
+        }
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "kronos.project"
             packageVersion = "1.0.0"
+        }
+    }
+}
+
+tasks.withType<JavaExec>().configureEach {
+    val javafxJars = configurations
+        .findByName("jvmRuntimeClasspath")
+        ?.incoming
+        ?.artifacts
+        ?.artifactFiles
+        ?.filter { it.name.contains("javafx") }
+        ?: files()
+
+    doFirst {
+        val jars = javafxJars.files.toList()
+        if (jars.isNotEmpty()) {
+            jvmArgs(
+                "--module-path", jars.joinToString(":"),
+                "--add-modules", "javafx.controls,javafx.web,javafx.swing,javafx.graphics,javafx.base",
+            )
         }
     }
 }

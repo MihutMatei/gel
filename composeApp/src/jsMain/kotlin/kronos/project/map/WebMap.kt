@@ -2,9 +2,6 @@ package kronos.project.map
 
 import kotlinx.browser.window
 
-private const val buildingsLayerId = "gel-3d-buildings"
-private const val defaultStyleUrl = "https://api.maptiler.com/maps/dataviz-dark/style.json"
-
 class WebMapHandle(private val map: MapLibreGl.Map) {
     fun destroy() {
         map.remove()
@@ -20,11 +17,11 @@ fun createBucharestMap(containerId: String): WebMapHandle? {
 
     val options = js("({})").unsafeCast<MapOptions>()
     options.container = containerId
-    options.style = withMapTilerKey(defaultStyleUrl)
-    options.center = arrayOf(26.1025, 44.4268)
-    options.zoom = 15.4
-    options.pitch = 55.0
-    options.bearing = -12.0
+    options.style = withMapTilerKey(MapDefaults.styleUrl)
+    options.center = arrayOf(MapDefaults.centerLongitude, MapDefaults.centerLatitude)
+    options.zoom = MapDefaults.zoom
+    options.pitch = MapDefaults.pitch
+    options.bearing = MapDefaults.bearing
     options.antialias = true
     options.asDynamic().attributionControl = false
 
@@ -52,10 +49,10 @@ private fun addExtrudedBuildings(map: MapLibreGl.Map) {
     val sourceName = resolveBuildingSource(style) ?: return
 
     val layerIds = (style.layers as? Array<dynamic>)?.mapNotNull { it.id as? String }.orEmpty()
-    if (buildingsLayerId in layerIds) return
+    if (MapDefaults.buildingsLayerId in layerIds) return
 
     val paint = js("({})")
-    paint["fill-extrusion-color"] = "#A9BBC8"
+    paint["fill-extrusion-color"] = MapDefaults.buildingsColor
     paint["fill-extrusion-height"] = arrayOf(
         "coalesce",
         arrayOf("get", "height"),
@@ -68,14 +65,14 @@ private fun addExtrudedBuildings(map: MapLibreGl.Map) {
         arrayOf("get", "render_min_height"),
         0,
     )
-    paint["fill-extrusion-opacity"] = 0.82
+    paint["fill-extrusion-opacity"] = MapDefaults.buildingsOpacity
 
     val layer = js("({})").unsafeCast<LayerSpec>()
-    layer.id = buildingsLayerId
+    layer.id = MapDefaults.buildingsLayerId
     layer.type = "fill-extrusion"
     layer.source = sourceName
-    layer.minzoom = 14.0
-    layer.asDynamic()["source-layer"] = "building"
+    layer.minzoom = MapDefaults.buildingsMinZoom
+    layer.asDynamic()["source-layer"] = MapDefaults.buildingSourceLayer
     layer.paint = paint
 
     map.addLayer(layer)
@@ -85,7 +82,7 @@ private fun resolveBuildingSource(style: dynamic): String? {
     val layers = style.layers as? Array<dynamic> ?: return null
 
     val buildingSource = layers
-        .firstOrNull { layer -> layer.asDynamic()["source-layer"] == "building" }
+        .firstOrNull { layer -> layer.asDynamic()["source-layer"] == MapDefaults.buildingSourceLayer }
         ?.source as? String
 
     if (buildingSource != null) return buildingSource

@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.viewinterop.AndroidView
+import kronos.project.map.MapDefaults
 
 @Composable
 @SuppressLint("SetJavaScriptEnabled")
@@ -111,16 +112,16 @@ private fun androidMapHtml(mapTilerApiKey: String): String =
         <script src="https://unpkg.com/maplibre-gl@4.4.1/dist/maplibre-gl.js"></script>
         <script>
           const MAPTILER_API_KEY = "$mapTilerApiKey";
-          const styleBase = "https://api.maptiler.com/maps/dataviz-dark/style.json";
+          const styleBase = "${MapDefaults.styleUrl}";
           const styleUrl = MAPTILER_API_KEY ? `${'$'}{styleBase}?key=${'$'}{MAPTILER_API_KEY}` : styleBase;
 
           const map = new maplibregl.Map({
             container: "gel-map",
             style: styleUrl,
-            center: [26.1025, 44.4268],
-            zoom: 15.4,
-            pitch: 55,
-            bearing: -12,
+            center: [${MapDefaults.centerLongitude}, ${MapDefaults.centerLatitude}],
+            zoom: ${MapDefaults.zoom},
+            pitch: ${MapDefaults.pitch},
+            bearing: ${MapDefaults.bearing},
             antialias: true,
             attributionControl: false,
           });
@@ -130,24 +131,24 @@ private fun androidMapHtml(mapTilerApiKey: String): String =
           map.on("load", () => {
 
             const style = map.getStyle();
-            const existing = (style.layers || []).find((layer) => layer.id === "gel-3d-buildings");
+            const existing = (style.layers || []).find((layer) => layer.id === "${MapDefaults.buildingsLayerId}");
             if (existing) return;
 
-            const buildingLayer = (style.layers || []).find((layer) => layer["source-layer"] === "building");
+            const buildingLayer = (style.layers || []).find((layer) => layer["source-layer"] === "${MapDefaults.buildingSourceLayer}");
             const sourceName = buildingLayer?.source || Object.keys(style.sources || {})[0];
             if (!sourceName) return;
 
             map.addLayer({
-              id: "gel-3d-buildings",
+              id: "${MapDefaults.buildingsLayerId}",
               type: "fill-extrusion",
               source: sourceName,
-              "source-layer": "building",
-              minzoom: 14,
+              "source-layer": "${MapDefaults.buildingSourceLayer}",
+              minzoom: ${MapDefaults.buildingsMinZoom},
               paint: {
-                "fill-extrusion-color": "#A9BBC8",
+                "fill-extrusion-color": "${MapDefaults.buildingsColor}",
                 "fill-extrusion-height": ["coalesce", ["get", "height"], ["get", "render_height"], 0],
                 "fill-extrusion-base": ["coalesce", ["get", "min_height"], ["get", "render_min_height"], 0],
-                "fill-extrusion-opacity": 0.82,
+                "fill-extrusion-opacity": ${MapDefaults.buildingsOpacity},
               },
             });
           });
