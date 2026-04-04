@@ -27,6 +27,13 @@ class WebMapHandle(private val map: MapLibreGl.Map) {
         }
     }
 
+    fun setMapClickHandler(onMapClick: (Double, Double) -> Unit) {
+        map.on("click") { event ->
+            val coordinates = event.lngLat
+            onMapClick(coordinates.lat as Double, coordinates.lng as Double)
+        }
+    }
+
     fun destroy() {
         clearMarkers()
         map.remove()
@@ -128,17 +135,34 @@ private fun resolveBuildingSource(style: dynamic): String? {
 
 private fun MapMarkerCard.toPopupHtml(): String {
     val titleHtml = title.escapeHtml()
-    val subtitleHtml = subtitle?.takeIf { it.isNotBlank() }?.escapeHtml()
-    val bodyHtml = body?.takeIf { it.isNotBlank() }?.escapeHtml()?.replace("\n", "<br/>")
+    val mainAuthorHtml = mainPost.author.escapeHtml()
+    val mainContentHtml = mainPost.content.escapeHtml().replace("\n", "<br/>")
+    val mainVotesHtml = "+${mainPost.upvotes}/-${mainPost.downvotes}".escapeHtml()
 
-    val subtitleBlock = if (subtitleHtml == null) "" else "<div style='margin-top:4px;color:#5f6368;font-size:12px;'>$subtitleHtml</div>"
-    val bodyBlock = if (bodyHtml == null) "" else "<div style='margin-top:8px;color:#202124;font-size:12px;line-height:1.4;'>$bodyHtml</div>"
+    val commentsBlock = if (comments.isEmpty()) {
+        ""
+    } else {
+        comments.joinToString(separator = "") { comment ->
+            val author = comment.author.escapeHtml()
+            val content = comment.content.escapeHtml().replace("\n", "<br/>")
+            val votes = "+${comment.upvotes}/-${comment.downvotes}".escapeHtml()
+            (
+                "<div style='margin-top:8px;padding-top:8px;border-top:1px solid #eceff1;'>"
+                    + "<div style='font-size:11px;color:#5f6368;'>u/$author  $votes</div>"
+                    + "<div style='margin-top:4px;font-size:12px;color:#202124;line-height:1.35;'>$content</div>"
+                    + "</div>"
+                )
+        }
+    }
 
     return (
-        "<div style='min-width:220px;max-width:280px;padding:2px 4px;'>"
-            + "<div style='font-weight:600;font-size:14px;color:#202124;'>$titleHtml</div>"
-            + subtitleBlock
-            + bodyBlock
+        "<div style='min-width:240px;max-width:300px;padding:2px 4px;'>"
+            + "<div style='font-weight:700;font-size:14px;color:#202124;'>$titleHtml</div>"
+            + "<div style='margin-top:8px;padding:8px;border:1px solid #eceff1;border-radius:8px;background:#f8f9fa;'>"
+            + "<div style='font-size:11px;color:#5f6368;'>u/$mainAuthorHtml  $mainVotesHtml</div>"
+            + "<div style='margin-top:4px;font-size:12px;color:#202124;line-height:1.4;'>$mainContentHtml</div>"
+            + "</div>"
+            + commentsBlock
             + "</div>"
         )
 }

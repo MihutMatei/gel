@@ -3,10 +3,17 @@ package kronos.project.map
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 
+data class MapThreadPost(
+    val author: String,
+    val content: String,
+    val upvotes: Int = 0,
+    val downvotes: Int = 0,
+)
+
 data class MapMarkerCard(
     val title: String,
-    val subtitle: String? = null,
-    val body: String? = null,
+    val mainPost: MapThreadPost,
+    val comments: List<MapThreadPost> = emptyList(),
 )
 
 data class MapMarker(

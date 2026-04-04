@@ -8,12 +8,17 @@ import kronos.project.map.MapMarker
 fun MapScreen(
     markers: List<MapMarker>,
     modifier: Modifier = Modifier,
+    onMapClick: (Double, Double) -> Unit = { _, _ -> },
 ) {
-    PlatformMapHost(modifier = modifier, markers = markers)
+    PlatformMapHost(modifier = modifier, markers = markers, onMapClick = onMapClick)
 }
 
 @Composable
-expect fun PlatformMapHost(modifier: Modifier = Modifier, markers: List<MapMarker> = emptyList())
+expect fun PlatformMapHost(
+    modifier: Modifier = Modifier,
+    markers: List<MapMarker> = emptyList(),
+    onMapClick: (Double, Double) -> Unit = { _, _ -> },
+)
 
 @Composable
 expect fun rememberLocationPermissionGranted(): Boolean

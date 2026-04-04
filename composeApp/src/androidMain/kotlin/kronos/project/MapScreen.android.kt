@@ -20,7 +20,11 @@ import kronos.project.map.MapMarker
 
 @Composable
 @SuppressLint("SetJavaScriptEnabled")
-actual fun PlatformMapHost(modifier: Modifier, markers: List<MapMarker>) {
+actual fun PlatformMapHost(
+    modifier: Modifier,
+    markers: List<MapMarker>,
+    onMapClick: (Double, Double) -> Unit,
+) {
     val webViewState = remember { mutableStateOf<WebView?>(null) }
     val mapTilerApiKey = stringResource(R.string.maptiler_api_key)
     val html = remember(markers, mapTilerApiKey) { androidMapHtml(mapTilerApiKey, markers) }
@@ -69,6 +73,7 @@ actual fun PlatformMapHost(modifier: Modifier, markers: List<MapMarker>) {
     }
 }
 
+
 @Composable
 actual fun rememberLocationPermissionGranted(): Boolean {
     val context = LocalContext.current
@@ -86,9 +91,17 @@ actual fun rememberLocationPermissionGranted(): Boolean {
 private fun androidMapHtml(mapTilerApiKey: String, markers: List<MapMarker>): String {
     val markersJson = markers.joinToString(",", prefix = "[", postfix = "]") {
         val cardTitle = it.card?.title?.toJsStringLiteral().orEmpty()
-        val cardSubtitle = it.card?.subtitle?.toJsStringLiteral().orEmpty()
-        val cardBody = it.card?.body?.toJsStringLiteral().orEmpty()
-        "{id:\"${it.id.toJsStringLiteral()}\",lat:${it.latitude},lng:${it.longitude},title:\"${it.title.toJsStringLiteral()}\",cardTitle:\"$cardTitle\",cardSubtitle:\"$cardSubtitle\",cardBody:\"$cardBody\"}"
+        val mainAuthor = it.card?.mainPost?.author?.toJsStringLiteral().orEmpty()
+        val mainContent = it.card?.mainPost?.content?.toJsStringLiteral().orEmpty()
+        val mainVotes = it.card?.mainPost?.let { post -> "+${post.upvotes}/-${post.downvotes}" }?.toJsStringLiteral().orEmpty()
+        val commentsJson = it.card?.comments?.joinToString(",", prefix = "[", postfix = "]") { comment ->
+            val author = comment.author.toJsStringLiteral()
+            val content = comment.content.toJsStringLiteral()
+            val votes = "+${comment.upvotes}/-${comment.downvotes}".toJsStringLiteral()
+            "{author:\"$author\",content:\"$content\",votes:\"$votes\"}"
+        } ?: "[]"
+
+        "{id:\"${it.id.toJsStringLiteral()}\",lat:${it.latitude},lng:${it.longitude},title:\"${it.title.toJsStringLiteral()}\",cardTitle:\"$cardTitle\",mainAuthor:\"$mainAuthor\",mainContent:\"$mainContent\",mainVotes:\"$mainVotes\",comments:$commentsJson}"
     }
 
     return """
@@ -169,14 +182,28 @@ private fun androidMapHtml(mapTilerApiKey: String, markers: List<MapMarker>): St
 
           const buildCardHtml = (item) => {
             if (!item.cardTitle) return "";
-            const title = `<div style=\"font-weight:600;font-size:14px;color:#202124;\">${'$'}{escapeHtml(item.cardTitle)}</div>`;
-            const subtitle = item.cardSubtitle
-              ? `<div style=\"margin-top:4px;color:#5f6368;font-size:12px;\">${'$'}{escapeHtml(item.cardSubtitle)}</div>`
+
+            const title = `<div style=\"font-weight:700;font-size:14px;color:#202124;line-height:1.25;overflow-wrap:anywhere;\">${'$'}{escapeHtml(item.cardTitle)}</div>`;
+            const mainMeta = `<div style=\"font-size:11px;color:#5f6368;\">u/${'$'}{escapeHtml(item.mainAuthor)} ${'$'}{escapeHtml(item.mainVotes)}</div>`;
+            const mainBody = `<div style=\"margin-top:4px;font-size:12px;color:#202124;line-height:1.4;overflow-wrap:anywhere;\">${'$'}{escapeHtml(item.mainContent).replace(/\\n/g, "<br/>")}</div>`;
+
+            const comments = Array.isArray(item.comments) ? item.comments : [];
+            const commentsHtml = comments.map((comment) => {
+              return `<div style=\"margin-top:6px;padding:7px 8px;width:100%;box-sizing:border-box;border:1px solid #eceff1;border-radius:10px;background:#ffffff;\">`
+                + `<div style=\"font-size:11px;color:#5f6368;\">u/${'$'}{escapeHtml(comment.author)} ${'$'}{escapeHtml(comment.votes)}</div>`
+                + `<div style=\"margin-top:4px;font-size:12px;color:#202124;line-height:1.35;overflow-wrap:anywhere;\">${'$'}{escapeHtml(comment.content).replace(/\\n/g, "<br/>")}</div>`
+                + `</div>`;
+            }).join("");
+
+            const commentsSection = commentsHtml
+              ? `<div style=\"margin-top:8px;max-height:142px;overflow-y:auto;overflow-x:hidden;padding-right:4px;box-sizing:border-box;\">${'$'}{commentsHtml}</div>`
               : "";
-            const body = item.cardBody
-              ? `<div style=\"margin-top:8px;color:#202124;font-size:12px;line-height:1.4;\">${'$'}{escapeHtml(item.cardBody).replace(/\\n/g, "<br/>")}</div>`
-              : "";
-            return `<div style=\"min-width:220px;max-width:280px;padding:2px 4px;\">${'$'}{title}${'$'}{subtitle}${'$'}{body}</div>`;
+
+            return `<div style=\"width:100%;max-width:280px;box-sizing:border-box;padding:2px 4px;overflow:hidden;\">`
+              + `${'$'}{title}`
+              + `<div style=\"margin-top:8px;padding:8px;width:100%;box-sizing:border-box;border:1px solid #eceff1;border-radius:10px;background:#f8f9fa;\">${'$'}{mainMeta}${'$'}{mainBody}</div>`
+              + `${'$'}{commentsSection}`
+              + `</div>`;
           };
 
           markers.forEach((item) => {

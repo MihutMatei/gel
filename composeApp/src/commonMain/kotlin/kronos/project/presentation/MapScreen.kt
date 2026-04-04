@@ -19,19 +19,127 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kronos.project.MapScreen as PlatformMapScreen
 import kronos.project.map.MapDefaults
+import kronos.project.map.MapFacade
 import kronos.project.map.MapMarker
 import kronos.project.map.MapMarkerCard
+import kronos.project.map.MapThreadPost
 
-private val dummyVerificationMarker = MapMarker(
-    id = "dummy-verification-pin",
-    latitude = MapDefaults.centerLatitude,
-    longitude = MapDefaults.centerLongitude,
-    title = "Streetlight not working on Calea Victoriei",
-    card = MapMarkerCard(
+private val demoMarkers = listOf(
+    MapMarker(
+        id = "demo-cluster-1",
+        latitude = MapDefaults.centerLatitude,
+        longitude = MapDefaults.centerLongitude,
         title = "Streetlight not working on Calea Victoriei",
-        subtitle = "posted by u/matei_urbanwatch  +42/-3",
-        body = "u/ana_reports (+11): I pass this area daily, still dark after 22:00.\n\n"
-            + "u/ion_commuter (+7/-1): Same here. It has been like this for almost a week.",
+        card = MapMarkerCard(
+            title = "Streetlight not working on Calea Victoriei",
+            mainPost = MapThreadPost(
+                author = "matei_urbanwatch",
+                content = "Street lighting is off around the roundabout after 22:00. Visibility is poor and pedestrians are hard to see.",
+                upvotes = 42,
+                downvotes = 3,
+            ),
+            comments = listOf(
+                MapThreadPost("ana_reports", "I can confirm this. It has been dark for at least 3 nights.", 11, 0),
+                MapThreadPost("ion_commuter", "Cars speed there. This should be fixed urgently.", 7, 1),
+                MapThreadPost("city_observer", "Maybe a blown fuse in that segment. Reported it to city support too.", 5, 0),
+            ),
+        ),
+    ),
+    MapMarker(
+        id = "demo-cluster-2",
+        latitude = MapDefaults.centerLatitude + 0.00022,
+        longitude = MapDefaults.centerLongitude - 0.00018,
+        title = "Pothole growing near tram line",
+        card = MapMarkerCard(
+            title = "Pothole growing near tram line",
+            mainPost = MapThreadPost(
+                author = "roadwatch_ro",
+                content = "Large pothole near the tram rail. Cars are swerving into the next lane to avoid it.",
+                upvotes = 29,
+                downvotes = 2,
+            ),
+            comments = listOf(
+                MapThreadPost("bus_driver_17", "Hit this with the bus yesterday. Needs quick repair.", 15, 0),
+                MapThreadPost("civic_eye", "Added photos in municipal app too.", 6, 0),
+            ),
+        ),
+    ),
+    MapMarker(
+        id = "demo-cluster-3",
+        latitude = MapDefaults.centerLatitude - 0.00019,
+        longitude = MapDefaults.centerLongitude + 0.00024,
+        title = "Crosswalk paint faded",
+        card = MapMarkerCard(
+            title = "Crosswalk paint faded",
+            mainPost = MapThreadPost(
+                author = "safe_walks",
+                content = "The zebra crossing is barely visible at night and in rain.",
+                upvotes = 18,
+                downvotes = 1,
+            ),
+            comments = listOf(
+                MapThreadPost("school_parent", "Kids use this crossing every morning.", 12, 0),
+                MapThreadPost("urban_planner88", "Should be repainted with reflective paint.", 8, 0),
+            ),
+        ),
+    ),
+    MapMarker(
+        id = "demo-spread-1",
+        latitude = MapDefaults.centerLatitude + 0.0023,
+        longitude = MapDefaults.centerLongitude - 0.0019,
+        title = "Overflowing trash bins",
+        card = MapMarkerCard(
+            title = "Overflowing trash bins",
+            mainPost = MapThreadPost(
+                author = "green_block",
+                content = "Bins have not been collected for days. Trash spills onto the sidewalk.",
+                upvotes = 24,
+                downvotes = 4,
+            ),
+            comments = listOf(
+                MapThreadPost("neighbor21", "Strong smell in the afternoon.", 9, 0),
+                MapThreadPost("clean_city_now", "Collection truck skipped this street twice.", 10, 1),
+            ),
+        ),
+    ),
+    MapMarker(
+        id = "demo-spread-2",
+        latitude = MapDefaults.centerLatitude - 0.0027,
+        longitude = MapDefaults.centerLongitude + 0.0021,
+        title = "Broken traffic signal timing",
+        card = MapMarkerCard(
+            title = "Broken traffic signal timing",
+            mainPost = MapThreadPost(
+                author = "commute_daily",
+                content = "Pedestrian light stays green for only a few seconds. Elderly people cannot cross in time.",
+                upvotes = 37,
+                downvotes = 2,
+            ),
+            comments = listOf(
+                MapThreadPost("night_runner", "I saw people stranded in the middle lane.", 13, 0),
+                MapThreadPost("traffic_nerd", "Cycle appears unsynced with adjacent intersection.", 7, 0),
+                MapThreadPost("volunteer_ro", "Submitted formal complaint this morning.", 5, 0),
+            ),
+        ),
+    ),
+    MapMarker(
+        id = "demo-spread-3",
+        latitude = MapDefaults.centerLatitude + 0.0031,
+        longitude = MapDefaults.centerLongitude + 0.0014,
+        title = "Graffiti and vandalized bus shelter",
+        card = MapMarkerCard(
+            title = "Graffiti and vandalized bus shelter",
+            mainPost = MapThreadPost(
+                author = "district_watch",
+                content = "Glass panel is cracked and bench is damaged. Shelter is unsafe during crowded hours.",
+                upvotes = 16,
+                downvotes = 5,
+            ),
+            comments = listOf(
+                MapThreadPost("daily_bus_user", "People avoid waiting inside now.", 8, 1),
+                MapThreadPost("fixit_team", "Can coordinate with transit operator.", 4, 0),
+            ),
+        ),
     ),
 )
 
@@ -79,7 +187,7 @@ fun MapScreen(
     val error by pinViewModel.error.collectAsState()
 
     val markers = if (pins.isEmpty()) {
-        listOf(dummyVerificationMarker)
+        demoMarkers
     } else {
         pins.map { pin ->
             MapMarker(
@@ -89,8 +197,10 @@ fun MapScreen(
                 title = pin.title,
                 card = MapMarkerCard(
                     title = pin.title,
-                    subtitle = pin.category,
-                    body = pin.description,
+                    mainPost = MapThreadPost(
+                        author = "reporter",
+                        content = pin.description,
+                    ),
                 ),
             )
         }
@@ -131,16 +241,17 @@ fun MapScreen(
                     onClick = { pinViewModel.refreshPins() },
                     icon = { Icon(Icons.Default.MyLocation, contentDescription = "Refresh pins") },
                 )
-                AnimatedFAB(
-                    onClick = { onCreateIssue(44.4396, 26.0963) },
-                    icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                    text = { Text("Report Issue") },
-                )
             }
         },
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize()) {
-            PlatformMapScreen(modifier = Modifier.fillMaxSize(), markers = markers)
+            PlatformMapScreen(
+                modifier = Modifier.fillMaxSize(),
+                markers = markers,
+                onMapClick = { lat, long ->
+                    onCreateIssue(lat, long)
+                }
+            )
 
             if (loading) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
