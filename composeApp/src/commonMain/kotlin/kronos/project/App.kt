@@ -1,48 +1,60 @@
 package kronos.project
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.safeContentPadding
-import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import org.jetbrains.compose.resources.painterResource
-
-import gel.composeapp.generated.resources.Res
-import gel.composeapp.generated.resources.compose_multiplatform
+import androidx.compose.runtime.Composable
+import androidx.navigation.NavType
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import kronos.project.presentation.*
+import kronos.project.ui.theme.CivicLensTheme
 
 @Composable
-@Preview
 fun App() {
-    MaterialTheme {
-        var showContent by remember { mutableStateOf(false) }
-        Column(
-            modifier = Modifier
-                .background(MaterialTheme.colorScheme.primaryContainer)
-                .safeContentPadding()
-                .fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
+    CivicLensTheme {
+        val navController = rememberNavController()
+
+        NavHost(
+            navController = navController,
+            startDestination = "map"
         ) {
-            Button(onClick = { showContent = !showContent }) {
-                Text("Click me!")
+            composable("map") {
+                MapScreen(
+                    onIssueClick = { id -> navController.navigate("issue_detail/$id") },
+                    onCreateIssue = { lat, lon -> navController.navigate("create_issue/$lat/$lon") },
+                    onProfileClick = { navController.navigate("profile") }
+                )
             }
-            AnimatedVisibility(showContent) {
-                val greeting = remember { Greeting().greet() }
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Image(painterResource(Res.drawable.compose_multiplatform), null)
-                    Text("Compose: $greeting")
-                }
+            composable(
+                route = "create_issue/{lat}/{lon}",
+                arguments = listOf(
+                    navArgument("lat") { type = NavType.StringType },
+                    navArgument("lon") { type = NavType.StringType }
+                )
+            ) { backStackEntry ->
+                val lat = backStackEntry.arguments?.getString("lat")?.toDoubleOrNull() ?: 0.0
+                val lon = backStackEntry.arguments?.getString("lon")?.toDoubleOrNull() ?: 0.0
+                CreateIssueScreen(
+                    latitude = lat,
+                    longitude = lon,
+                    onBack = { navController.popBackStack() },
+                    onIssueCreated = { navController.popBackStack() }
+                )
+            }
+            composable(
+                route = "issue_detail/{id}",
+                arguments = listOf(navArgument("id") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val id = backStackEntry.arguments?.getString("id") ?: ""
+                IssueDetailScreen(
+                    issueId = id,
+                    onBack = { navController.popBackStack() }
+                )
+            }
+            composable("profile") {
+                ProfileScreen(
+                    onBack = { navController.popBackStack() }
+                )
             }
         }
     }
