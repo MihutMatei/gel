@@ -1,20 +1,14 @@
 package kronos.project
 
-import android.annotation.SuppressLint
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.view.ViewGroup
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -91,7 +85,10 @@ actual fun rememberLocationPermissionGranted(): Boolean {
 
 private fun androidMapHtml(mapTilerApiKey: String, markers: List<MapMarker>): String {
     val markersJson = markers.joinToString(",", prefix = "[", postfix = "]") {
-        "{id:\"${it.id}\",lat:${it.latitude},lng:${it.longitude},title:\"${it.title.replace("\"", "\\\"")}\"}"
+        val cardTitle = it.card?.title?.toJsStringLiteral().orEmpty()
+        val cardSubtitle = it.card?.subtitle?.toJsStringLiteral().orEmpty()
+        val cardBody = it.card?.body?.toJsStringLiteral().orEmpty()
+        "{id:\"${it.id.toJsStringLiteral()}\",lat:${it.latitude},lng:${it.longitude},title:\"${it.title.toJsStringLiteral()}\",cardTitle:\"$cardTitle\",cardSubtitle:\"$cardSubtitle\",cardBody:\"$cardBody\"}"
     }
 
     return """
@@ -163,8 +160,34 @@ private fun androidMapHtml(mapTilerApiKey: String, markers: List<MapMarker>): St
           map.addControl(new maplibregl.NavigationControl({ showZoom: false, showCompass: false }), "top-right");
 
           const markers = $markersJson;
+          const escapeHtml = (value) => String(value || "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/\"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+
+          const buildCardHtml = (item) => {
+            if (!item.cardTitle) return "";
+            const title = `<div style=\"font-weight:600;font-size:14px;color:#202124;\">${'$'}{escapeHtml(item.cardTitle)}</div>`;
+            const subtitle = item.cardSubtitle
+              ? `<div style=\"margin-top:4px;color:#5f6368;font-size:12px;\">${'$'}{escapeHtml(item.cardSubtitle)}</div>`
+              : "";
+            const body = item.cardBody
+              ? `<div style=\"margin-top:8px;color:#202124;font-size:12px;line-height:1.4;\">${'$'}{escapeHtml(item.cardBody).replace(/\\n/g, "<br/>")}</div>`
+              : "";
+            return `<div style=\"min-width:220px;max-width:280px;padding:2px 4px;\">${'$'}{title}${'$'}{subtitle}${'$'}{body}</div>`;
+          };
+
           markers.forEach((item) => {
-            const popup = new maplibregl.Popup({ offset: 20 }).setText(item.title || "Reported issue");
+            const cardHtml = buildCardHtml(item);
+            const popup = new maplibregl.Popup({ offset: 20 });
+            if (cardHtml) {
+              popup.setHTML(cardHtml);
+            } else {
+              popup.setText(item.title || "Reported issue");
+            }
+
             new maplibregl.Marker({ color: "#FF3D00" })
               .setLngLat([item.lng, item.lat])
               .setPopup(popup)
@@ -201,3 +224,8 @@ private fun androidMapHtml(mapTilerApiKey: String, markers: List<MapMarker>): St
     """.trimIndent()
 }
 
+private fun String.toJsStringLiteral(): String = this
+    .replace("\\", "\\\\")
+    .replace("\"", "\\\"")
+    .replace("\n", "\\n")
+    .replace("\r", "")

@@ -8,30 +8,31 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.MyLocation
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kronos.project.MapScreen as PlatformMapScreen
 import kronos.project.map.MapDefaults
 import kronos.project.map.MapMarker
-import kronos.project.MapScreen as PlatformMapScreen
+import kronos.project.map.MapMarkerCard
 
 private val dummyVerificationMarker = MapMarker(
     id = "dummy-verification-pin",
     latitude = MapDefaults.centerLatitude,
     longitude = MapDefaults.centerLongitude,
-    title = "Dummy pin (render check)",
+    title = "Streetlight not working on Calea Victoriei",
+    card = MapMarkerCard(
+        title = "Streetlight not working on Calea Victoriei",
+        subtitle = "posted by u/matei_urbanwatch  +42/-3",
+        body = "u/ana_reports (+11): I pass this area daily, still dark after 22:00.\n\n"
+            + "u/ion_commuter (+7/-1): Same here. It has been like this for almost a week.",
+    ),
 )
 
 @Composable
@@ -43,7 +44,7 @@ private fun AnimatedFAB(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
-    val scale by animateFloatAsState(if (isPressed) 0.9f else 1f)
+    val scale by animateFloatAsState(targetValue = if (isPressed) 0.9f else 1f, label = "fab_scale")
 
     Box(modifier = modifier.scale(scale)) {
         if (text != null) {
@@ -77,17 +78,22 @@ fun MapScreen(
     val loading by pinViewModel.loading.collectAsState()
     val error by pinViewModel.error.collectAsState()
 
-    val markers = if (pins.isNotEmpty()) {
+    val markers = if (pins.isEmpty()) {
+        listOf(dummyVerificationMarker)
+    } else {
         pins.map { pin ->
             MapMarker(
                 id = pin.id,
                 latitude = pin.latitude,
                 longitude = pin.longitude,
                 title = pin.title,
+                card = MapMarkerCard(
+                    title = pin.title,
+                    subtitle = pin.category,
+                    body = pin.description,
+                ),
             )
         }
-    } else {
-        listOf(dummyVerificationMarker)
     }
 
     Scaffold(
@@ -97,35 +103,22 @@ fun MapScreen(
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(28.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
-                        ),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)),
                     ) {
                         Row(
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Icon(
-                                Icons.Default.Search,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.outline,
-                            )
+                            Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.outline)
                             Spacer(modifier = Modifier.width(12.dp))
-                            Text(
-                                "Search for issues nearby...",
-                                color = MaterialTheme.colorScheme.outline,
-                            )
+                            Text("Search for issues nearby...", color = MaterialTheme.colorScheme.outline)
                         }
                     }
                 },
                 actions = {
                     IconButton(onClick = onProfileClick) {
                         Surface(shape = RoundedCornerShape(20.dp)) {
-                            Icon(
-                                Icons.Default.Person,
-                                contentDescription = "Profile",
-                                modifier = Modifier.padding(4.dp),
-                            )
+                            Icon(Icons.Default.Person, contentDescription = "Profile", modifier = Modifier.padding(4.dp))
                         }
                     }
                 },
@@ -147,10 +140,7 @@ fun MapScreen(
         },
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize()) {
-            PlatformMapScreen(
-                modifier = Modifier.fillMaxSize(),
-                markers = markers,
-            )
+            PlatformMapScreen(modifier = Modifier.fillMaxSize(), markers = markers)
 
             if (loading) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
@@ -168,7 +158,6 @@ fun MapScreen(
                 )
             }
 
-
             if (pins.isNotEmpty()) {
                 Card(
                     modifier = Modifier
@@ -177,7 +166,7 @@ fun MapScreen(
                         .clickable { onIssueClick(pins.first().id) },
                 ) {
                     Text(
-                        "Latest: ${pins.first().title}",
+                        text = "Latest: ${pins.first().title}",
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
                     )
                 }

@@ -11,7 +11,12 @@ class WebMapHandle(private val map: MapLibreGl.Map) {
         val mapLibre = js("globalThis.maplibregl")
         markers.forEach { marker ->
             val popup = mapLibre.Popup(js("({ offset: 20 })"))
-                .setText(marker.title.ifBlank { "Reported issue" })
+            val cardHtml = marker.card?.toPopupHtml()
+            if (cardHtml.isNullOrBlank()) {
+                popup.setText(marker.title.ifBlank { "Reported issue" })
+            } else {
+                popup.setHTML(cardHtml)
+            }
 
             val markerView = mapLibre.Marker(js("({ color: '#FF3D00' })"))
                 .setLngLat(arrayOf(marker.longitude, marker.latitude))
@@ -120,3 +125,27 @@ private fun resolveBuildingSource(style: dynamic): String? {
     val sourceKeys = js("Object.keys(style.sources || {})") as Array<String>
     return sourceKeys.firstOrNull()
 }
+
+private fun MapMarkerCard.toPopupHtml(): String {
+    val titleHtml = title.escapeHtml()
+    val subtitleHtml = subtitle?.takeIf { it.isNotBlank() }?.escapeHtml()
+    val bodyHtml = body?.takeIf { it.isNotBlank() }?.escapeHtml()?.replace("\n", "<br/>")
+
+    val subtitleBlock = if (subtitleHtml == null) "" else "<div style='margin-top:4px;color:#5f6368;font-size:12px;'>$subtitleHtml</div>"
+    val bodyBlock = if (bodyHtml == null) "" else "<div style='margin-top:8px;color:#202124;font-size:12px;line-height:1.4;'>$bodyHtml</div>"
+
+    return (
+        "<div style='min-width:220px;max-width:280px;padding:2px 4px;'>"
+            + "<div style='font-weight:600;font-size:14px;color:#202124;'>$titleHtml</div>"
+            + subtitleBlock
+            + bodyBlock
+            + "</div>"
+        )
+}
+
+private fun String.escapeHtml(): String = this
+    .replace("&", "&amp;")
+    .replace("<", "&lt;")
+    .replace(">", "&gt;")
+    .replace("\"", "&quot;")
+    .replace("'", "&#39;")
