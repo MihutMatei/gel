@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 
 object Dependencies {
     val currentUserRole = MutableStateFlow(UserRole.CITIZEN)
+    val isDarkMode = MutableStateFlow<Boolean?>(null) // null means follow system
 
     val issueRepository = FakeIssueRepository()
     val commentRepository = FakeCommentRepository()
