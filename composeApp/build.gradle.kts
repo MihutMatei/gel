@@ -45,13 +45,15 @@ kotlin {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
-            implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
-            implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.1")
-            implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.0")
-            implementation("io.ktor:ktor-client-core:3.4.1")
-            implementation("io.ktor:ktor-client-content-negotiation:3.4.1")
-            implementation("io.ktor:ktor-serialization-kotlinx-json:3.4.1")
-            implementation("org.jetbrains.androidx.navigation:navigation-compose:2.8.0-alpha10")
+            implementation("org.jetbrains.androidx.core:core-bundle:1.0.1")
+            implementation("org.jetbrains.androidx.savedstate:savedstate:1.4.0")
+            implementation(libs.kotlinx.coroutinesCore)
+            implementation(libs.kotlinx.datetime)
+            implementation(libs.kotlinx.serializationJson)
+            implementation(libs.ktor.clientCore)
+            implementation(libs.ktor.clientContentNegotiation)
+            implementation(libs.ktor.serializationKotlinxJson)
+            implementation(libs.navigation.compose)
             implementation("org.jetbrains.compose.material:material-icons-extended:1.7.1")
             implementation(projects.shared)
         }
@@ -105,5 +107,11 @@ compose.desktop {
             packageName = "kronos.project"
             packageVersion = "1.0.0"
         }
+    }
+}
+
+configurations.all {
+    resolutionStrategy {
+        force(libs.kotlinx.datetime)
     }
 }
