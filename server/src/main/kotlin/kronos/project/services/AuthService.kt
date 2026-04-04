@@ -4,6 +4,7 @@ import kronos.project.database.DatabaseFactory.dbQuery
 import kronos.project.dto.AuthUserResponse
 import kronos.project.dto.LoginRequest
 import kronos.project.dto.RegisterRequest
+import kronos.project.models.UserSettingsTable
 import kronos.project.models.UsersTable
 import kronos.project.security.Hashing
 import org.jetbrains.exposed.sql.ResultRow
@@ -30,9 +31,15 @@ class AuthService {
 
             val userId = UsersTable.insert {
                 it[username] = request.username
+                it[firstName] = request.firstName
+                it[lastName] = request.lastName
                 it[email] = request.email
                 it[passwordHash] = Hashing.hashPassword(request.password)
             }[UsersTable.id].value
+
+            UserSettingsTable.insert {
+                it[this.userId] = userId
+            }
 
             val created = UsersTable.selectAll().where { UsersTable.id eq userId }.singleOrNull()
                 ?: return@dbQuery RegisterResult.Failed
@@ -62,6 +69,8 @@ class AuthService {
     private fun toUserResponse(row: ResultRow): AuthUserResponse = AuthUserResponse(
         id = row[UsersTable.id].value.toString(),
         username = row[UsersTable.username],
+        firstName = row[UsersTable.firstName],
+        lastName = row[UsersTable.lastName],
         email = row[UsersTable.email],
     )
 }

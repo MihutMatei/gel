@@ -15,10 +15,12 @@ import kronos.project.database.DatabaseFactory
 import kronos.project.dto.ErrorResponse
 import kronos.project.routes.authRoutes
 import kronos.project.routes.pinRoutes
+import kronos.project.routes.userRoutes
 import kronos.project.security.JwtConfig
 import kronos.project.services.AuthService
 import kronos.project.services.CommentService
 import kronos.project.services.PinService
+import kronos.project.services.UserService
 import kotlinx.serialization.json.Json
 
 fun main(args: Array<String>) = EngineMain.main(args)
@@ -39,6 +41,7 @@ fun Application.module(initDb: Boolean = true, jwtConfigOverride: JwtConfig? = n
         allowHeader(io.ktor.http.HttpHeaders.ContentType)
         allowMethod(HttpMethod.Get)
         allowMethod(HttpMethod.Post)
+        allowMethod(HttpMethod.Put)
         allowMethod(HttpMethod.Patch)
         allowMethod(HttpMethod.Delete)
     }
@@ -63,6 +66,7 @@ fun Application.module(initDb: Boolean = true, jwtConfigOverride: JwtConfig? = n
     val authService = AuthService()
     val pinService = PinService()
     val commentService = CommentService()
+    val userService = UserService()
 
     routing {
         get("/") {
@@ -70,6 +74,7 @@ fun Application.module(initDb: Boolean = true, jwtConfigOverride: JwtConfig? = n
         }
 
         authRoutes(authService, jwtConfig)
+        userRoutes(userService)
         pinRoutes(pinService, commentService)
     }
 }

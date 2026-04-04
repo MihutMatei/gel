@@ -25,10 +25,18 @@ class AuthRepository(
 ) {
     private val json = Json { ignoreUnknownKeys = true }
 
-    suspend fun register(username: String, email: String, password: String): Result<AuthUser> = runCatching {
+    suspend fun register(username: String, firstName: String, lastName: String, email: String, password: String): Result<AuthUser> = runCatching {
         val response = httpClient.post("${ApiConfig.BASE_URL}/auth/register") {
             contentType(ContentType.Application.Json)
-            setBody(RegisterRequestDto(username = username, email = email, password = password))
+            setBody(
+                RegisterRequestDto(
+                    username = username,
+                    firstName = firstName,
+                    lastName = lastName,
+                    email = email,
+                    password = password,
+                ),
+            )
         }
 
         if (!response.status.isSuccess()) {
@@ -83,6 +91,8 @@ class AuthRepository(
 private fun AuthUserDto.toDomain(): AuthUser = AuthUser(
     id = id,
     username = username,
+    firstName = firstName,
+    lastName = lastName,
     email = email,
 )
 

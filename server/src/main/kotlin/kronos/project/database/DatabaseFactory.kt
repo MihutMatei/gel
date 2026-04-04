@@ -6,6 +6,7 @@ import io.ktor.server.config.ApplicationConfig
 import kronos.project.models.CommentsTable
 import kronos.project.models.PinImagesTable
 import kronos.project.models.PinsTable
+import kronos.project.models.UserSettingsTable
 import kronos.project.models.UsersTable
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
@@ -42,7 +43,8 @@ object DatabaseFactory {
         Database.connect(HikariDataSource(hikariConfig))
 
         transaction {
-            SchemaUtils.create(UsersTable, PinsTable, CommentsTable, PinImagesTable)
+            // Keep existing data; only add missing tables/columns for evolving schemas.
+            SchemaUtils.createMissingTablesAndColumns(UsersTable, UserSettingsTable, PinsTable, CommentsTable, PinImagesTable)
         }
     }
 

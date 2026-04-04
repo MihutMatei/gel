@@ -91,6 +91,9 @@ private fun validateRegisterRequest(request: RegisterRequest): String? {
     if (!usernameRegex.matches(request.username)) {
         return "username must be 3-30 characters and contain only letters, numbers, and underscores"
     }
+    if (request.firstName.isBlank() || request.lastName.isBlank()) {
+        return "firstName and lastName are required"
+    }
     if (!emailRegex.matches(request.email)) {
         return "email format is invalid"
     }

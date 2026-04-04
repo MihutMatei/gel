@@ -5,6 +5,8 @@ import kronos.project.data.repository.FakeGamificationRepository
 import kronos.project.data.repository.FakeIssueRepository
 import kronos.project.data.repository.AuthRepository
 import kronos.project.data.repository.PinRepository
+import kronos.project.data.repository.SettingsRepository
+import kronos.project.data.repository.UserRepository
 import kronos.project.data.remote.AppHttpClient
 import kronos.project.data.remote.TokenStorage
 import kronos.project.domain.model.UserRole
@@ -19,6 +21,8 @@ object Dependencies {
     val httpClient = AppHttpClient.create(tokenStorage)
     val authRepository = AuthRepository(httpClient, tokenStorage)
     val pinRepository = PinRepository(httpClient)
+    val settingsRepository = SettingsRepository(httpClient)
+    val userRepository = UserRepository(httpClient)
 
     val issueRepository = FakeIssueRepository()
     val commentRepository = FakeCommentRepository()

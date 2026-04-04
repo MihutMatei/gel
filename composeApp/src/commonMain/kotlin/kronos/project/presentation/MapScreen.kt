@@ -49,7 +49,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kronos.project.MapScreen as PlatformMapScreen
 import kronos.project.map.MapMarker
-import kronos.project.rememberLocationPermissionGranted
 import androidx.compose.material3.ExperimentalMaterial3Api
 
 @Composable
@@ -94,7 +93,6 @@ fun MapScreen(
     val pins by pinViewModel.pins.collectAsState()
     val loading by pinViewModel.loading.collectAsState()
     val error by pinViewModel.error.collectAsState()
-    val hasLocationPermission = rememberLocationPermissionGranted()
 
     val markers = pins.map { pin ->
         MapMarker(
@@ -161,19 +159,6 @@ fun MapScreen(
                 )
             }
 
-            if (!hasLocationPermission) {
-                Card(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                ) {
-                    Text(
-                        "Location permission not granted. The map still works and pins are visible.",
-                        modifier = Modifier.padding(12.dp),
-                    )
-                }
-            }
 
             if (pins.isNotEmpty()) {
                 Card(

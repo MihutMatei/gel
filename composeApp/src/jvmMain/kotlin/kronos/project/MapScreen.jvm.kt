@@ -144,7 +144,7 @@ private fun desktopMapHtml(mapTilerApiKey: String, markers: List<MapMarker>): St
             attributionControl: false,
           });
 
-          map.addControl(new maplibregl.NavigationControl(), "top-right");
+          map.addControl(new maplibregl.NavigationControl({ showZoom: false, showCompass: false }), "top-right");
 
           const markers = $markersJson;
           markers.forEach((item) => {

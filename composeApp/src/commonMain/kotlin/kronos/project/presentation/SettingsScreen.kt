@@ -14,15 +14,22 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import kronos.project.Dependencies
+import kronos.project.domain.model.SettingsDto
 import kronos.project.domain.model.UserRole
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(onBack: () -> Unit) {
-    // Current state from Dependencies
-    val initialDarkMode = Dependencies.isDarkMode.collectAsState().value
-    val initialRole = Dependencies.currentUserRole.collectAsState().value
+    val settingsViewModel: SettingsViewModel = viewModel { SettingsViewModel() }
+    val loadedSettings by settingsViewModel.settings.collectAsState()
+    val loadedProfile by settingsViewModel.profile.collectAsState()
+    val saveError by settingsViewModel.error.collectAsState()
+
+    // Current state from backend-backed values with local fallbacks
+    val initialDarkMode = loadedSettings?.darkMode ?: Dependencies.isDarkMode.collectAsState().value
+    val initialRole = loadedProfile?.role ?: Dependencies.currentUserRole.collectAsState().value
 
     // Pending changes (local state)
     var pendingDarkMode by remember(initialDarkMode) { mutableStateOf(initialDarkMode) }
@@ -48,8 +55,15 @@ fun SettingsScreen(onBack: () -> Unit) {
             if (hasChanges) {
                 ExtendedFloatingActionButton(
                     onClick = {
-                        Dependencies.isDarkMode.value = pendingDarkMode
-                        Dependencies.currentUserRole.value = pendingRole
+                        val settings = SettingsDto(
+                            darkMode = pendingDarkMode ?: false,
+                            notificationsEnabled = loadedSettings?.notificationsEnabled ?: true,
+                            language = loadedSettings?.language ?: "en",
+                        )
+                        val profile = loadedProfile
+                        if (profile != null) {
+                            settingsViewModel.save(settings, profile.copy(role = pendingRole))
+                        }
                     },
                     icon = { Icon(Icons.Default.Check, contentDescription = null) },
                     text = { Text("Apply Changes") },
@@ -68,6 +82,14 @@ fun SettingsScreen(onBack: () -> Unit) {
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            if (!saveError.isNullOrBlank()) {
+                Text(
+                    text = saveError ?: "Failed to save settings",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
+
             // Theme Section
             Text(
                 "Theme",

@@ -26,7 +26,12 @@ fun createBucharestMap(containerId: String): WebMapHandle? {
     options.asDynamic().attributionControl = false
 
     val map = MapLibreGl.Map(options)
-    map.addControl(MapLibreGl.NavigationControl(), "top-right")
+    map.addControl(
+        MapLibreGl.NavigationControl(
+            js("({ showZoom: false, showCompass: false })"),
+        ),
+        "top-right",
+    )
     map.on("load") {
         addExtrudedBuildings(map)
     }
