@@ -13,6 +13,7 @@ import kronos.project.dto.CreateCommentRequest
 import kronos.project.dto.CreatePinRequest
 import kronos.project.dto.ErrorResponse
 import kronos.project.dto.UpdatePinRequest
+import kronos.project.dto.VoteCommentRequest
 import kronos.project.models.PinStatus
 import kronos.project.services.CommentService
 import kronos.project.services.PinFilters
@@ -179,6 +180,57 @@ fun Route.pinRoutes(pinService: PinService, commentService: CommentService) {
             }
 
             call.respond(HttpStatusCode.NoContent)
+        }
+
+        post("/{id}/reply") {
+            val parentId = call.parameters["id"].toUuidOrNull()
+                ?: return@post call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid comment id"))
+
+            val request = runCatching { call.receive<CreateCommentRequest>() }
+                .getOrElse {
+                    return@post call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid request body"))
+                }
+
+            if (request.content.isBlank()) {
+                return@post call.respond(HttpStatusCode.BadRequest, ErrorResponse("Reply content cannot be blank"))
+            }
+
+            val authorId = request.authorId.toUuidOrNull()
+                ?: return@post call.respond(HttpStatusCode.BadRequest, ErrorResponse("authorId must be a valid UUID"))
+
+            val parentComment = commentService.getCommentById(parentId)
+                ?: return@post call.respond(HttpStatusCode.NotFound, ErrorResponse("Parent comment not found"))
+
+            val pinId = parentComment.pinId.toUuidOrNull()
+                ?: return@post call.respond(HttpStatusCode.InternalServerError, ErrorResponse("Invalid pin reference"))
+
+            val reply = commentService.addComment(
+                pinId = pinId,
+                authorId = authorId,
+                request = request.copy(parentId = parentId.toString()),
+            ) ?: return@post call.respond(HttpStatusCode.NotFound, ErrorResponse("Author not found"))
+
+            call.respond(HttpStatusCode.Created, reply)
+        }
+
+        post("/{id}/vote") {
+            val commentId = call.parameters["id"].toUuidOrNull()
+                ?: return@post call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid comment id"))
+
+            val request = runCatching { call.receive<VoteCommentRequest>() }
+                .getOrElse {
+                    return@post call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid request body"))
+                }
+
+            val userId = request.userId.toUuidOrNull()
+                ?: return@post call.respond(HttpStatusCode.BadRequest, ErrorResponse("userId must be a valid UUID"))
+
+            val success = commentService.voteOnComment(commentId, userId, request.isUpvote)
+            if (!success) {
+                return@post call.respond(HttpStatusCode.NotFound, ErrorResponse("Comment or user not found"))
+            }
+
+            call.respond(HttpStatusCode.OK, mapOf("success" to true))
         }
     }
 }

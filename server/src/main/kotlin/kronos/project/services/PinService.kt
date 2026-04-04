@@ -112,9 +112,12 @@ class PinService {
     private fun toComment(row: ResultRow): CommentResponse = CommentResponse(
         id = row[CommentsTable.id].value.toString(),
         pinId = row[CommentsTable.pinId].value.toString(),
+        parentId = row[CommentsTable.parentId]?.value?.toString(),
         authorId = row[CommentsTable.authorId].value.toString(),
         content = row[CommentsTable.content],
         createdAt = row[CommentsTable.createdAt].toString(),
+        upvotes = row[CommentsTable.upvotes],
+        downvotes = row[CommentsTable.downvotes],
     )
 
     private fun toImage(row: ResultRow): PinImageResponse = PinImageResponse(

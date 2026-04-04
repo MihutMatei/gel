@@ -7,12 +7,14 @@ import kronos.project.data.repository.AuthRepository
 import kronos.project.data.repository.PinRepository
 import kronos.project.data.remote.AppHttpClient
 import kronos.project.data.remote.TokenStorage
+import kronos.project.domain.model.AuthUser
 import kronos.project.domain.model.UserRole
 import kronos.project.domain.usecase.*
 import kotlinx.coroutines.flow.MutableStateFlow
 
 object Dependencies {
     val currentUserRole = MutableStateFlow(UserRole.CITIZEN)
+    val currentUser = MutableStateFlow<AuthUser?>(null)
     val isDarkMode = MutableStateFlow<Boolean?>(null) // null means follow system
 
     val tokenStorage = TokenStorage()

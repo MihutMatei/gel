@@ -7,7 +7,11 @@ import kotlinx.serialization.Serializable
 data class Comment(
     val id: String,
     val issueId: String,
+    val parentId: String? = null,
     val text: String,
     val authorRole: UserRole,
-    val createdAt: Instant
+    val createdAt: Instant,
+    val upvotes: Int = 0,
+    val downvotes: Int = 0,
+    val replies: List<Comment> = emptyList(),
 )

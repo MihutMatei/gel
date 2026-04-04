@@ -4,6 +4,7 @@ import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import io.ktor.server.config.ApplicationConfig
 import kronos.project.models.CommentsTable
+import kronos.project.models.CommentVotesTable
 import kronos.project.models.PinImagesTable
 import kronos.project.models.PinsTable
 import kronos.project.models.UsersTable
@@ -42,7 +43,7 @@ object DatabaseFactory {
         Database.connect(HikariDataSource(hikariConfig))
 
         transaction {
-            SchemaUtils.create(UsersTable, PinsTable, CommentsTable, PinImagesTable)
+            SchemaUtils.create(UsersTable, PinsTable, CommentsTable, PinImagesTable, CommentVotesTable)
         }
     }
 
