@@ -15,12 +15,13 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import kotlinx.serialization.json.Json
 import kronos.project.database.DatabaseFactory
+import kronos.project.dto.AuthUserResponse
 import kronos.project.dto.CommentResponse
+import kronos.project.dto.LoginResponse
 import kronos.project.dto.PinDetailsResponse
 import kronos.project.dto.PinStatusDto
 import kronos.project.dto.PinSummaryResponse
-import kronos.project.models.UsersTable
-import org.jetbrains.exposed.sql.insert
+import kronos.project.security.JwtConfig
 
 class BackendIntegrationTest {
     private val json = Json { ignoreUnknownKeys = true }
@@ -34,20 +35,27 @@ class BackendIntegrationTest {
             "database.password" to "",
             "database.driver" to "org.h2.Driver",
             "database.maxPoolSize" to "2",
+            "jwt.secret" to "test-secret",
+            "jwt.issuer" to "test-issuer",
+            "jwt.audience" to "test-audience",
+            "jwt.realm" to "test-realm",
+            "jwt.expiresInHours" to "24",
         )
 
         DatabaseFactory.init(dbConfig)
 
-        val userId = DatabaseFactory.dbQuery {
-            UsersTable.insert {
-                it[username] = "dummy-user"
-                it[email] = "dummy-user@example.com"
-            }[UsersTable.id].value
-        }
-
         val port = ServerSocket(0).use { it.localPort }
         val server = embeddedServer(Netty, port = port, host = "127.0.0.1") {
-            module(initDb = false)
+            module(
+                initDb = false,
+                jwtConfigOverride = JwtConfig(
+                    secret = "test-secret",
+                    issuer = "test-issuer",
+                    audience = "test-audience",
+                    realm = "test-realm",
+                    expiresInHours = 24,
+                ),
+            )
         }
 
         val client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build()
@@ -57,6 +65,38 @@ class BackendIntegrationTest {
             server.start(wait = false)
             waitUntilServerIsReady(client, baseUrl)
 
+            val registerBody = """
+                {
+                  "username": "dummy_user",
+                  "email": "dummy-user@example.com",
+                  "password": "dummy-password"
+                }
+            """.trimIndent()
+            val registerResponse = request(client, "POST", "$baseUrl/auth/register", registerBody)
+            assertEquals(201, registerResponse.statusCode())
+            val registeredUser = json.decodeFromString<AuthUserResponse>(registerResponse.body())
+
+            val loginBody = """
+                {
+                  "email": "dummy-user@example.com",
+                  "password": "dummy-password"
+                }
+            """.trimIndent()
+            val loginResponse = request(client, "POST", "$baseUrl/auth/login", loginBody)
+            assertEquals(200, loginResponse.statusCode())
+            val loginPayload = json.decodeFromString<LoginResponse>(loginResponse.body())
+            assertTrue(loginPayload.accessToken.isNotBlank())
+
+            val meResponse = request(
+                client,
+                "GET",
+                "$baseUrl/auth/me",
+                headers = mapOf("Authorization" to "Bearer ${loginPayload.accessToken}"),
+            )
+            assertEquals(200, meResponse.statusCode())
+            val meUser = json.decodeFromString<AuthUserResponse>(meResponse.body())
+            assertEquals(registeredUser.id, meUser.id)
+
             val createPinBody = """
                 {
                   "title": "Broken streetlight",
@@ -64,7 +104,7 @@ class BackendIntegrationTest {
                   "latitude": 46.7705,
                   "longitude": 23.5899,
                   "category": "lighting",
-                  "createdBy": "$userId"
+                  "createdBy": "${registeredUser.id}"
                 }
             """.trimIndent()
 
@@ -79,7 +119,7 @@ class BackendIntegrationTest {
 
             val createCommentBody = """
                 {
-                  "authorId": "$userId",
+                  "authorId": "${registeredUser.id}",
                   "content": "I can confirm this issue."
                 }
             """.trimIndent()
@@ -128,11 +168,16 @@ class BackendIntegrationTest {
         method: String,
         url: String,
         body: String? = null,
+        headers: Map<String, String> = emptyMap(),
     ): HttpResponse<String> {
         val builder = HttpRequest.newBuilder()
             .uri(URI.create(url))
             .timeout(Duration.ofSeconds(10))
             .header("Accept", "application/json")
+
+        headers.forEach { (name, value) ->
+            builder.header(name, value)
+        }
 
         if (body != null) {
             builder.header("Content-Type", "application/json")
