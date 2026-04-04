@@ -8,6 +8,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import kotlinx.browser.document
+import kronos.project.map.MapMarker
 import kronos.project.map.WebMapHandle
 import kronos.project.map.createBucharestMap
 import org.w3c.dom.HTMLElement
@@ -15,7 +16,7 @@ import org.w3c.dom.HTMLElement
 private const val mapContainerId = "gel-map"
 
 @Composable
-actual fun PlatformMapHost(modifier: Modifier) {
+actual fun PlatformMapHost(modifier: Modifier, markers: List<MapMarker>) {
     val containerState = remember { mutableStateOf<MapContainerRef?>(null) }
     val mapState = remember { mutableStateOf<WebMapHandle?>(null) }
 
@@ -39,6 +40,9 @@ actual fun PlatformMapHost(modifier: Modifier) {
         }
     }
 }
+
+@Composable
+actual fun rememberLocationPermissionGranted(): Boolean = true
 
 private data class MapContainerRef(
     val element: HTMLElement,
