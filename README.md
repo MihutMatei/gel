@@ -41,3 +41,27 @@ cd /home/matei/Repositories/gel
 
 ### Next planned step
 Add map pins + issue creation interactions on top of the current 2.5D map base.
+=======
+## Backend (Ktor + PostgreSQL)
+
+Serverul este in modulul `server` si expune API-ul REST pentru `pins` si `comments`.
+
+### Config DB
+
+Variabile recomandate:
+
+- `JDBC_DATABASE_URL` (ex: `jdbc:postgresql://localhost:5432/hackitall`)
+- `DB_USER`
+- `DB_PASSWORD`
+
+Daca variabilele lipsesc, se folosesc valorile din `server/src/main/resources/application.conf`.
+
+### Run
+
+```bash
+./gradlew :server:run
+```
+
+La startup, `DatabaseFactory` ruleaza `SchemaUtils.create()` pentru tabelele:
+`users`, `pins`, `comments`, `pin_images`.
+
