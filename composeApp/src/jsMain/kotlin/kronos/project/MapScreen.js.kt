@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -39,6 +40,10 @@ actual fun PlatformMapHost(modifier: Modifier, markers: List<MapMarker>) {
             containerState.value = null
         }
     }
+
+    LaunchedEffect(mapState.value, markers) {
+        mapState.value?.setMarkers(markers)
+    }
 }
 
 @Composable
@@ -60,4 +65,3 @@ private fun ensureMapContainer(id: String): MapContainerRef {
     document.body?.appendChild(container)
     return MapContainerRef(container, createdByCompose = true)
 }
-

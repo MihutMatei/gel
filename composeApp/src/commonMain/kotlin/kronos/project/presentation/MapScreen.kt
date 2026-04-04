@@ -23,8 +23,16 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kronos.project.map.MapDefaults
 import kronos.project.map.MapMarker
 import kronos.project.MapScreen as PlatformMapScreen
+
+private val dummyVerificationMarker = MapMarker(
+    id = "dummy-verification-pin",
+    latitude = MapDefaults.centerLatitude,
+    longitude = MapDefaults.centerLongitude,
+    title = "Dummy pin (render check)",
+)
 
 @Composable
 private fun AnimatedFAB(
@@ -69,13 +77,17 @@ fun MapScreen(
     val loading by pinViewModel.loading.collectAsState()
     val error by pinViewModel.error.collectAsState()
 
-    val markers = pins.map { pin ->
-        MapMarker(
-            id = pin.id,
-            latitude = pin.latitude,
-            longitude = pin.longitude,
-            title = pin.title,
-        )
+    val markers = if (pins.isNotEmpty()) {
+        pins.map { pin ->
+            MapMarker(
+                id = pin.id,
+                latitude = pin.latitude,
+                longitude = pin.longitude,
+                title = pin.title,
+            )
+        }
+    } else {
+        listOf(dummyVerificationMarker)
     }
 
     Scaffold(

@@ -3,8 +3,33 @@ package kronos.project.map
 import kotlinx.browser.window
 
 class WebMapHandle(private val map: MapLibreGl.Map) {
+    private val activeMarkers = mutableListOf<dynamic>()
+
+    fun setMarkers(markers: List<MapMarker>) {
+        clearMarkers()
+
+        val mapLibre = js("globalThis.maplibregl")
+        markers.forEach { marker ->
+            val popup = mapLibre.Popup(js("({ offset: 20 })"))
+                .setText(marker.title.ifBlank { "Reported issue" })
+
+            val markerView = mapLibre.Marker(js("({ color: '#FF3D00' })"))
+                .setLngLat(arrayOf(marker.longitude, marker.latitude))
+                .setPopup(popup)
+                .addTo(map)
+
+            activeMarkers.add(markerView)
+        }
+    }
+
     fun destroy() {
+        clearMarkers()
         map.remove()
+    }
+
+    private fun clearMarkers() {
+        activeMarkers.forEach { it.remove() }
+        activeMarkers.clear()
     }
 }
 
@@ -95,4 +120,3 @@ private fun resolveBuildingSource(style: dynamic): String? {
     val sourceKeys = js("Object.keys(style.sources || {})") as Array<String>
     return sourceKeys.firstOrNull()
 }
-
