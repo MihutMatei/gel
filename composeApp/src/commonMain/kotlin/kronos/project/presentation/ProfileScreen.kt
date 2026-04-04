@@ -43,6 +43,7 @@ import kronos.project.ui.theme.shimmerLoadingAnimation
 fun ProfileScreen(
     onBack: () -> Unit,
     onSettingsClick: () -> Unit,
+    onLogout: () -> Unit,
     viewModel: ProfileViewModel = viewModel { ProfileViewModel() }
 ) {
     val gamificationState by viewModel.gamificationState.collectAsState()
@@ -58,6 +59,9 @@ fun ProfileScreen(
                     }
                 },
                 actions = {
+                    IconButton(onClick = onLogout) {
+                        Icon(Icons.Default.Logout, contentDescription = "Logout")
+                    }
                     IconButton(onClick = onSettingsClick) {
                         Icon(Icons.Default.Settings, contentDescription = "Settings")
                     }

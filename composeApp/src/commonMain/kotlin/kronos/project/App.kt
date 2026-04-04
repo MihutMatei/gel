@@ -4,42 +4,82 @@ import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.navigation.toRoute
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import kotlinx.serialization.Serializable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.lifecycle.viewmodel.compose.viewModel
+import kronos.project.domain.model.AuthState
 import kronos.project.presentation.*
 import kronos.project.ui.theme.CivicLensTheme
 
-@Serializable data class CreateIssue(val lat: Double, val lon: Double)
+@Serializable data class CreateIssue(val lat: String, val lon: String)
 @Serializable data class IssueDetail(val id: String)
 @Serializable object Map
 @Serializable object Profile
 @Serializable object Settings
+@Serializable object Login
+@Serializable object Register
 
 @Composable
 fun App() {
     val isDarkModeSetting by Dependencies.isDarkMode.collectAsState()
     val darkTheme = isDarkModeSetting ?: isSystemInDarkTheme()
+    val authViewModel: AuthViewModel = viewModel { AuthViewModel() }
+    val authState by authViewModel.authState.collectAsState()
+    val authError by authViewModel.error.collectAsState()
 
     CivicLensTheme(darkTheme = darkTheme) {
         val navController = rememberNavController()
+        val startDestination: Any = when (authState) {
+            AuthState.Loading -> Login
+            AuthState.Unauthenticated -> Login
+            is AuthState.Authenticated -> Map
+        }
+
+        LaunchedEffect(authState) {
+            when (authState) {
+                AuthState.Loading -> Unit
+                AuthState.Unauthenticated -> navController.navigate(Login) {
+                    popUpTo<Login> { inclusive = true }
+                }
+                is AuthState.Authenticated -> navController.navigate(Map) {
+                    popUpTo<Login> { inclusive = true }
+                }
+            }
+        }
 
         NavHost(
             navController = navController,
-            startDestination = Map,
+            startDestination = startDestination,
             enterTransition = { fadeIn(animationSpec = tween(400)) },
             exitTransition = { fadeOut(animationSpec = tween(400)) },
             popEnterTransition = { fadeIn(animationSpec = tween(400)) },
             popExitTransition = { fadeOut(animationSpec = tween(400)) }
         ) {
+            composable<Login> {
+                LoginScreen(
+                    error = authError,
+                    onLogin = { email, password -> authViewModel.login(email, password) },
+                    onGoToRegister = { navController.navigate(Register) },
+                )
+            }
+            composable<Register> {
+                RegisterScreen(
+                    error = authError,
+                    onRegister = { username, email, password -> authViewModel.register(username, email, password) },
+                    onGoToLogin = { navController.popBackStack() },
+                )
+            }
             composable<Map> {
                 MapScreen(
                     onIssueClick = { id -> navController.navigate(IssueDetail(id)) },
-                    onCreateIssue = { lat, lon -> navController.navigate(CreateIssue(lat, lon)) },
+                    onCreateIssue = { lat, lon -> navController.navigate(CreateIssue(lat.toString(), lon.toString())) },
                     onProfileClick = { navController.navigate(Profile) }
                 )
             }
@@ -57,8 +97,8 @@ fun App() {
             ) { backStackEntry ->
                 val args: CreateIssue = backStackEntry.toRoute()
                 CreateIssueScreen(
-                    latitude = args.lat,
-                    longitude = args.lon,
+                    latitude = args.lat.toDoubleOrNull() ?: 0.0,
+                    longitude = args.lon.toDoubleOrNull() ?: 0.0,
                     onBack = { navController.popBackStack() },
                     onIssueCreated = { navController.popBackStack() }
                 )
@@ -80,7 +120,8 @@ fun App() {
             composable<Profile> {
                 ProfileScreen(
                     onBack = { navController.popBackStack() },
-                    onSettingsClick = { navController.navigate(Settings) }
+                    onSettingsClick = { navController.navigate(Settings) },
+                    onLogout = { authViewModel.logout() },
                 )
             }
             composable<Settings> {
