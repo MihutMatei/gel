@@ -80,9 +80,13 @@ class ComplaintThreadViewModel : ViewModel() {
     }
 
     private fun sortComments(list: List<CommentDto>, order: CommentSortOrder): List<CommentDto> {
-        return when (order) {
+        val sorted = when (order) {
             CommentSortOrder.TOP -> list.sortedByDescending { it.upvotes - it.downvotes }
+            // ISO-8601 timestamps (e.g. "2025-01-01T12:00:00Z") sort correctly as strings
             CommentSortOrder.NEW -> list.sortedByDescending { it.createdAt }
+        }
+        return sorted.map { comment ->
+            comment.copy(replies = sortComments(comment.replies, order))
         }
     }
 }
