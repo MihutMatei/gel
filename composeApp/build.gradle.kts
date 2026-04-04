@@ -28,7 +28,7 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.composeHotReload)
-    id("org.jetbrains.kotlin.plugin.serialization") version "2.3.20"
+    id("org.jetbrains.kotlin.plugin.serialization") version "2.1.20"
 }
 
 kotlin {
@@ -46,10 +46,27 @@ kotlin {
     }
 
     sourceSets {
+        all {
+            configurations.all {
+                resolutionStrategy {
+                    force("org.jetbrains.kotlinx:kotlinx-datetime:0.6.1")
+                    force("org.jetbrains.androidx.savedstate:savedstate:1.4.0")
+                    force("org.jetbrains.androidx.savedstate:savedstate-ktx:1.4.0")
+                    force("org.jetbrains.androidx.savedstate:savedstate-compose:1.4.0")
+                    force("org.jetbrains.androidx.lifecycle:lifecycle-viewmodel:2.10.0")
+                    force("org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-ktx:2.10.0")
+                    force("org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose:2.10.0")
+                    force("org.jetbrains.androidx.lifecycle:lifecycle-runtime:2.10.0")
+                    force("org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose:2.10.0")
+                    force("org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-savedstate:2.10.0")
+                    force("org.jetbrains.androidx.lifecycle:lifecycle-common:2.10.0")
+                }
+            }
+        }
         androidMain.dependencies {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.androidx.activity.compose)
-            implementation("io.ktor:ktor-client-okhttp:3.4.1")
+            implementation("io.ktor:ktor-client-okhttp:3.0.3")
         }
         commonMain.dependencies {
             implementation(libs.compose.runtime)
@@ -60,10 +77,10 @@ kotlin {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
-            implementation("org.jetbrains.androidx.core:core-bundle:1.0.1")
-            implementation("org.jetbrains.androidx.savedstate:savedstate:1.4.0")
+            implementation(libs.androidx.core.bundle)
+            implementation(libs.androidx.savedstate)
             implementation(libs.kotlinx.coroutinesCore)
-            implementation(libs.kotlinx.datetime)
+            api(libs.kotlinx.datetime)
             implementation(libs.kotlinx.serializationJson)
             implementation(libs.ktor.clientCore)
             implementation(libs.ktor.clientContentNegotiation)
@@ -79,7 +96,8 @@ kotlin {
         jvmMain.dependencies {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutinesSwing)
-            implementation("io.ktor:ktor-client-cio:3.4.1")
+            implementation("io.ktor:ktor-client-cio:3.0.3")
+            implementation(libs.kotlinx.datetime)
             implementation("org.openjfx:javafx-base:$javafxVersion:$javafxPlatform")
             implementation("org.openjfx:javafx-graphics:$javafxVersion:$javafxPlatform")
             implementation("org.openjfx:javafx-controls:$javafxVersion:$javafxPlatform")
@@ -149,7 +167,7 @@ tasks.withType<JavaExec>().configureEach {
         val jars = javafxJars.files.toList()
         if (jars.isNotEmpty()) {
             jvmArgs(
-                "--module-path", jars.joinToString(":"),
+                "--module-path", jars.joinToString(File.pathSeparator),
                 "--add-modules", "javafx.controls,javafx.web,javafx.swing,javafx.graphics,javafx.base",
             )
         }

@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import kronos.project.Dependencies
 import kronos.project.domain.model.AuthState
 
@@ -29,16 +30,25 @@ class AuthViewModel : ViewModel() {
                 return@launch
             }
 
-            authRepository.me()
-                .onSuccess {
-                    _authState.value = AuthState.Authenticated(it)
-                    Dependencies.currentUser.value = it
-                }
-                .onFailure {
-                    authRepository.logout()
-                    Dependencies.currentUser.value = null
-                    _authState.value = AuthState.Unauthenticated
-                }
+            val result = withTimeoutOrNull(5000) {
+                authRepository.me()
+            }
+
+            if (result == null) {
+                // Timeout
+                _authState.value = AuthState.Unauthenticated
+                return@launch
+            }
+
+            result.onSuccess {
+                _authState.value = AuthState.Authenticated(it)
+                Dependencies.currentUser.value = it
+            }
+            .onFailure {
+                authRepository.logout()
+                Dependencies.currentUser.value = null
+                _authState.value = AuthState.Unauthenticated
+            }
         }
     }
 
