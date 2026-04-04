@@ -3,6 +3,9 @@ package kronos.project
 import io.ktor.http.HttpMethod
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.*
+import io.ktor.server.auth.Authentication
+import io.ktor.server.auth.jwt.jwt
+import io.ktor.server.auth.jwt.JWTPrincipal
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.plugins.cors.routing.CORS
 import io.ktor.server.engine.*
@@ -10,7 +13,11 @@ import io.ktor.server.netty.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kronos.project.database.DatabaseFactory
+import kronos.project.dto.ErrorResponse
+import kronos.project.routes.authRoutes
 import kronos.project.routes.pinRoutes
+import kronos.project.security.JwtConfig
+import kronos.project.services.AuthService
 import kronos.project.services.CommentService
 import kronos.project.services.PinService
 import kotlinx.serialization.json.Json
@@ -20,7 +27,9 @@ fun main() {
         .start(wait = true)
 }
 
-fun Application.module(initDb: Boolean = true) {
+fun Application.module(initDb: Boolean = true, jwtConfigOverride: JwtConfig? = null) {
+    val jwtConfig = jwtConfigOverride ?: JwtConfig.from(environment.config)
+
     if (initDb) {
         DatabaseFactory.init(environment.config)
     }
@@ -38,6 +47,24 @@ fun Application.module(initDb: Boolean = true) {
         allowMethod(HttpMethod.Delete)
     }
 
+    install(Authentication) {
+        jwt("auth-jwt") {
+            realm = jwtConfig.realm
+            verifier(jwtConfig.verifier())
+            validate { credential ->
+                if (credential.payload.subject.isNullOrBlank()) {
+                    null
+                } else {
+                    JWTPrincipal(credential.payload)
+                }
+            }
+            challenge { _, _ ->
+                call.respond(io.ktor.http.HttpStatusCode.Unauthorized, ErrorResponse("Invalid or expired token"))
+            }
+        }
+    }
+
+    val authService = AuthService()
     val pinService = PinService()
     val commentService = CommentService()
 
@@ -46,6 +73,7 @@ fun Application.module(initDb: Boolean = true) {
             call.respondText("Ktor: ${Greeting().greet()}")
         }
 
+        authRoutes(authService, jwtConfig)
         pinRoutes(pinService, commentService)
     }
 }
