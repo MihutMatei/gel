@@ -47,6 +47,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import gel.composeapp.generated.resources.*
+import org.jetbrains.compose.resources.stringResource
+import kronos.project.map.FakeMapFacade
 import kronos.project.MapScreen as PlatformMapScreen
 import kronos.project.map.MapMarker
 import kronos.project.rememberLocationPermissionGranted
@@ -87,7 +90,7 @@ private fun AnimatedFAB(
 @Composable
 fun MapScreen(
     onIssueClick: (String) -> Unit,
-    onCreateIssue: (Double, Double) -> Unit,
+    onCreateIssue: (String, String) -> Unit,
     onProfileClick: () -> Unit,
     pinViewModel: PinViewModel = viewModel { PinViewModel() },
 ) {
@@ -112,7 +115,7 @@ fun MapScreen(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.Lens, contentDescription = null, modifier = Modifier.size(22.dp))
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("CivicLens", fontWeight = FontWeight.ExtraBold)
+                        Text(stringResource(Res.string.app_name), fontWeight = FontWeight.ExtraBold)
                     }
                 },
                 actions = {
@@ -132,7 +135,7 @@ fun MapScreen(
                     icon = { Icon(Icons.Default.MyLocation, contentDescription = "Refresh pins") },
                 )
                 AnimatedFAB(
-                    onClick = { onCreateIssue(44.4396, 26.0963) },
+                    onClick = { onCreateIssue("44.4396", "26.0963") },
                     icon = { Icon(Icons.Default.Add, contentDescription = null) },
                     text = { Text("Report Issue") },
                 )
@@ -200,7 +203,7 @@ fun MapScreen(
                 Row(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.outline)
                     Spacer(modifier = Modifier.width(12.dp))
-                    Text("Search for issues nearby...", color = MaterialTheme.colorScheme.outline)
+                    Text(stringResource(Res.string.search_nearby), color = MaterialTheme.colorScheme.outline)
                 }
             }
         }

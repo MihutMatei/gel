@@ -31,6 +31,17 @@ plugins {
     id("org.jetbrains.kotlin.plugin.serialization") version "2.3.20"
 }
 
+configurations.all {
+    resolutionStrategy {
+        force("org.jetbrains.kotlinx:kotlinx-datetime:0.6.1")
+        force("org.jetbrains.androidx.savedstate:savedstate:1.4.0")
+        force("org.jetbrains.androidx.savedstate:savedstate-compose:1.4.0")
+        force("org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-savedstate:2.10.0")
+        force("org.jetbrains.androidx.core:core-bundle:1.0.1")
+        force("org.jetbrains.androidx.navigation:navigation-compose:2.9.2")
+    }
+}
+
 kotlin {
     androidTarget {
         compilerOptions {
@@ -60,8 +71,8 @@ kotlin {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
-            implementation("org.jetbrains.androidx.core:core-bundle:1.0.1")
-            implementation("org.jetbrains.androidx.savedstate:savedstate:1.4.0")
+            implementation(libs.androidx.core.bundle)
+            implementation(libs.androidx.savedstate)
             implementation(libs.kotlinx.coroutinesCore)
             implementation(libs.kotlinx.datetime)
             implementation(libs.kotlinx.serializationJson)
@@ -149,7 +160,7 @@ tasks.withType<JavaExec>().configureEach {
         val jars = javafxJars.files.toList()
         if (jars.isNotEmpty()) {
             jvmArgs(
-                "--module-path", jars.joinToString(":"),
+                "--module-path", jars.joinToString(File.pathSeparator),
                 "--add-modules", "javafx.controls,javafx.web,javafx.swing,javafx.graphics,javafx.base",
             )
         }
