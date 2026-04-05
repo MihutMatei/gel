@@ -37,7 +37,7 @@ fun LoginScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        Text("LOGIN TEST 123", style = MaterialTheme.typography.headlineMedium)
+        Text("LOGIN", style = MaterialTheme.typography.headlineMedium)
         Spacer(Modifier.height(16.dp))
 
         OutlinedTextField(

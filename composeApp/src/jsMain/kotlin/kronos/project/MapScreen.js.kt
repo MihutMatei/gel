@@ -13,13 +13,24 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import kotlinx.browser.document
 import kotlinx.browser.window
+import kotlinx.coroutines.delay
 import kronos.project.map.MapMarker
 import kronos.project.map.WebMapHandle
 import kronos.project.map.createBucharestMap
 import org.w3c.dom.HTMLElement
 
-private const val mapHostId = "map-host"
 private const val mapContainerId = "gel-map"
+private const val mapWrapperId = "gel-map-wrapper"
+
+private data class MapContainerRef(
+    val element: HTMLElement,
+    val createdByCompose: Boolean,
+)
+
+private data class MapWrapperRef(
+    val element: HTMLElement,
+    val createdByCompose: Boolean,
+)
 
 @Composable
 actual fun PlatformMapHost(
@@ -27,14 +38,8 @@ actual fun PlatformMapHost(
     markers: List<MapMarker>,
     onMapClick: (Double, Double) -> Unit,
 ) {
-    val host = remember {
-        document.getElementById(mapHostId) as? HTMLElement
-            ?: error("Missing #$mapHostId in index.html")
-    }
-    val container = remember {
-        document.getElementById(mapContainerId) as? HTMLElement
-            ?: error("Missing #$mapContainerId in index.html")
-    }
+    val wrapperRef = remember { ensureMapWrapper(mapWrapperId) }
+    val containerRef = remember { ensureMapContainer(mapContainerId, wrapperRef.element) }
 
     var mapHandle by remember { mutableStateOf<WebMapHandle?>(null) }
     val onMapClickState = rememberUpdatedState(onMapClick)
@@ -42,23 +47,31 @@ actual fun PlatformMapHost(
     Box(modifier = modifier.fillMaxSize()) {}
 
     LaunchedEffect(Unit) {
-        host.style.display = "block"
-        host.style.position = "fixed"
-        host.style.top = "0"
-        host.style.right = "0"
-        host.style.bottom = "0"
-        host.style.left = "0"
+        wrapperRef.element.style.setProperty("display", "block", "important")
+        wrapperRef.element.style.setProperty("position", "fixed", "important")
+        wrapperRef.element.style.setProperty("top", "0", "important")
+        wrapperRef.element.style.setProperty("right", "0", "important")
+        wrapperRef.element.style.setProperty("bottom", "0", "important")
+        wrapperRef.element.style.setProperty("left", "0", "important")
+        wrapperRef.element.style.setProperty("width", "100vw", "important")
+        wrapperRef.element.style.setProperty("height", "100vh", "important")
+        wrapperRef.element.style.setProperty("z-index", "0", "important")
 
-        container.style.position = "absolute"
-        container.style.top = "0"
-        container.style.right = "0"
-        container.style.bottom = "0"
-        container.style.left = "0"
-        container.style.width = "100%"
-        container.style.height = "100%"
+        containerRef.element.style.setProperty("position", "absolute", "important")
+        containerRef.element.style.setProperty("top", "0", "important")
+        containerRef.element.style.setProperty("right", "0", "important")
+        containerRef.element.style.setProperty("bottom", "0", "important")
+        containerRef.element.style.setProperty("left", "0", "important")
+        containerRef.element.style.setProperty("width", "100%", "important")
+        containerRef.element.style.setProperty("height", "100%", "important")
 
         if (mapHandle == null) {
-            mapHandle = createBucharestMap(container.id)
+            // Retry a few times to survive late script/global availability during dev reloads.
+            for (attempt in 0 until 20) {
+                mapHandle = createBucharestMap(containerRef.element.id)
+                if (mapHandle != null) break
+                delay(120)
+            }
         }
 
         window.requestAnimationFrame {
@@ -70,6 +83,12 @@ actual fun PlatformMapHost(
         window.setTimeout({
             mapHandle?.resize()
         }, 200)
+        window.setTimeout({
+            mapHandle?.resize()
+        }, 800)
+        window.setTimeout({
+            mapHandle?.resize()
+        }, 1500)
     }
 
     LaunchedEffect(mapHandle, markers) {
@@ -86,10 +105,46 @@ actual fun PlatformMapHost(
         onDispose {
             mapHandle?.destroy()
             mapHandle = null
-            host.style.display = "none"
+            if (containerRef.createdByCompose) containerRef.element.remove()
+            if (wrapperRef.createdByCompose) wrapperRef.element.remove()
         }
     }
 }
 
 @Composable
 actual fun rememberLocationPermissionGranted(): Boolean = true
+
+private fun ensureMapWrapper(id: String): MapWrapperRef {
+    val root = document.getElementById("root") as? HTMLElement
+        ?: error("Missing #root")
+    val body = document.body ?: error("Missing <body>")
+
+    val existing = document.getElementById(id) as? HTMLElement
+    if (existing != null) {
+        if (existing.parentElement != body) {
+            body.insertBefore(existing, root)
+        }
+        return MapWrapperRef(existing, createdByCompose = false)
+    }
+
+    val wrapper = document.createElement("div") as HTMLElement
+    wrapper.id = id
+    body.insertBefore(wrapper, root)
+
+    return MapWrapperRef(wrapper, createdByCompose = true)
+}
+
+private fun ensureMapContainer(id: String, parent: HTMLElement): MapContainerRef {
+    val existing = document.getElementById(id) as? HTMLElement
+    if (existing != null) {
+        if (existing.parentElement != parent) {
+            parent.appendChild(existing)
+        }
+        return MapContainerRef(existing, createdByCompose = false)
+    }
+
+    val container = document.createElement("div") as HTMLElement
+    container.id = id
+    parent.appendChild(container)
+    return MapContainerRef(container, createdByCompose = true)
+}

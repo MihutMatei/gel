@@ -1,9 +1,6 @@
 package kronos.project.presentation
 
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,15 +14,10 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Lens
-import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.ExtendedFloatingActionButton
-import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -250,37 +242,6 @@ private fun distanceMeters(a: DemoPoint, b: DemoPoint): Double {
 }
 
 @Composable
-private fun AnimatedFAB(
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    icon: @Composable () -> Unit,
-    text: @Composable (() -> Unit)? = null,
-) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-    val scale by animateFloatAsState(targetValue = if (isPressed) 0.9f else 1f, label = "fab_scale")
-
-    Box(modifier = modifier.scale(scale)) {
-        if (text != null) {
-            ExtendedFloatingActionButton(
-                onClick = onClick,
-                icon = icon,
-                text = text,
-                interactionSource = interactionSource,
-            )
-        } else {
-            SmallFloatingActionButton(
-                onClick = onClick,
-                interactionSource = interactionSource,
-                elevation = FloatingActionButtonDefaults.elevation(),
-            ) {
-                icon()
-            }
-        }
-    }
-}
-
-@Composable
 fun MapScreen(
     onIssueClick: (String) -> Unit,
     onCreateIssue: (Double, Double) -> Unit,
@@ -359,14 +320,5 @@ fun MapScreen(
             }
         }
 
-        AnimatedFAB(
-            onClick = { onCreateIssue(44.4396, 26.0963) },
-            icon = { Icon(Icons.Default.Add, contentDescription = null) },
-            text = { Text("Add request") },
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .navigationBarsPadding()
-                .padding(16.dp)
-        )
     }
 }

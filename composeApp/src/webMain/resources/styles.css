@@ -16,21 +16,21 @@ body {
 #map-host {
     position: fixed;
     inset: 0;
-    display: block;
+    display: none;
     z-index: 1;
 }
 
 #gel-map {
     position: absolute;
-    inset: 1;
+    inset: 0;
 }
 
 #root {
     width: 100%;
     height: 100%;
     position: relative;
-    z-index: 0;
-    pointer-events: none;
+    z-index: 2;
+    pointer-events: auto;
 }
 
 .maplibregl-ctrl-top-right {
