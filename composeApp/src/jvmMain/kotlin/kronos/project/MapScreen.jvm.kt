@@ -13,17 +13,22 @@ import kronos.project.map.MapDefaults
 import java.awt.BorderLayout
 import javax.swing.JPanel
 import javafx.application.Platform
+import kronos.project.map.MapMarker
 
 @Composable
-actual fun PlatformMapHost(modifier: Modifier) {
+actual fun PlatformMapHost(modifier: Modifier, markers: List<MapMarker>) {
     val mapTilerApiKey = remember { resolveDesktopMapTilerKey() }
+    val html = remember(markers, mapTilerApiKey) { desktopMapHtml(mapTilerApiKey, markers) }
 
     SwingPanel(
         modifier = modifier.fillMaxSize(),
         factory = {
             DesktopMapPanel().apply {
-                loadHtml(desktopMapHtml(mapTilerApiKey))
+                loadHtml(html)
             }
+        },
+        update = {
+            it.loadHtml(html)
         },
     )
 
@@ -35,6 +40,9 @@ actual fun PlatformMapHost(modifier: Modifier) {
         }
     }
 }
+
+@Composable
+actual fun rememberLocationPermissionGranted(): Boolean = true
 
 private class DesktopMapPanel : JPanel(BorderLayout()) {
     private val fxPanel = JFXPanel()
@@ -64,8 +72,12 @@ private fun resolveDesktopMapTilerKey(): String {
     return System.getProperty("MAPTILER_API_KEY")?.trim().orEmpty()
 }
 
-private fun desktopMapHtml(mapTilerApiKey: String): String =
-    """
+private fun desktopMapHtml(mapTilerApiKey: String, markers: List<MapMarker>): String {
+    val markersJson = markers.joinToString(",", prefix = "[", postfix = "]") {
+        "{id:\"${it.id}\",lat:${it.latitude},lng:${it.longitude},title:\"${it.title.replace("\"", "\\\"")}\"}"
+    }
+
+    return """
     <!doctype html>
     <html>
       <head>
@@ -134,6 +146,15 @@ private fun desktopMapHtml(mapTilerApiKey: String): String =
 
           map.addControl(new maplibregl.NavigationControl(), "top-right");
 
+          const markers = $markersJson;
+          markers.forEach((item) => {
+            const popup = new maplibregl.Popup({ offset: 20 }).setText(item.title || "Reported issue");
+            new maplibregl.Marker({ color: "#FF3D00" })
+              .setLngLat([item.lng, item.lat])
+              .setPopup(popup)
+              .addTo(map);
+          });
+
           map.on("load", () => {
             const style = map.getStyle();
             const existing = (style.layers || []).find((layer) => layer.id === "${MapDefaults.buildingsLayerId}");
@@ -161,4 +182,5 @@ private fun desktopMapHtml(mapTilerApiKey: String): String =
       </body>
     </html>
     """.trimIndent()
+}
 

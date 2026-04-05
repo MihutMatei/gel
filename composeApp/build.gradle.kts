@@ -60,6 +60,7 @@ kotlin {
         androidMain.dependencies {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.androidx.activity.compose)
+            implementation("io.ktor:ktor-client-okhttp:3.4.1")
         }
         commonMain.dependencies {
             implementation(libs.compose.runtime)
@@ -78,6 +79,7 @@ kotlin {
             implementation(libs.ktor.clientCore)
             implementation(libs.ktor.clientContentNegotiation)
             implementation(libs.ktor.serializationKotlinxJson)
+            implementation("com.russhwolf:multiplatform-settings-no-arg:1.2.0")
             implementation(libs.navigation.compose)
             implementation("org.jetbrains.compose.material:material-icons-extended:1.7.1")
             implementation(projects.shared)
@@ -88,6 +90,7 @@ kotlin {
         jvmMain.dependencies {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutinesSwing)
+            implementation("io.ktor:ktor-client-cio:3.4.1")
             implementation("org.openjfx:javafx-base:$javafxVersion:$javafxPlatform")
             implementation("org.openjfx:javafx-graphics:$javafxVersion:$javafxPlatform")
             implementation("org.openjfx:javafx-controls:$javafxVersion:$javafxPlatform")

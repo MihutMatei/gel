@@ -3,6 +3,10 @@ package kronos.project
 import kronos.project.data.repository.FakeCommentRepository
 import kronos.project.data.repository.FakeGamificationRepository
 import kronos.project.data.repository.FakeIssueRepository
+import kronos.project.data.repository.AuthRepository
+import kronos.project.data.repository.PinRepository
+import kronos.project.data.remote.AppHttpClient
+import kronos.project.data.remote.TokenStorage
 import kronos.project.domain.model.UserRole
 import kronos.project.domain.usecase.*
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,6 +27,11 @@ object Dependencies {
     val currentUserRole = MutableStateFlow(UserRole.CITIZEN)
     val isDarkMode = MutableStateFlow<Boolean?>(null) // null means follow system
     val currentLanguage = MutableStateFlow(Language.ENGLISH)
+
+    val tokenStorage = TokenStorage()
+    val httpClient = AppHttpClient.create(tokenStorage)
+    val authRepository = AuthRepository(httpClient, tokenStorage)
+    val pinRepository = PinRepository(httpClient)
 
     val issueRepository = FakeIssueRepository()
     val commentRepository = FakeCommentRepository()

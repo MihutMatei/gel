@@ -1,26 +1,35 @@
 package kronos.project
 
 import android.annotation.SuppressLint
+import android.Manifest
+import android.content.pm.PackageManager
 import android.view.ViewGroup
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.content.ContextCompat
 import kronos.project.map.MapDefaults
+import kronos.project.map.MapMarker
 
 @Composable
 @SuppressLint("SetJavaScriptEnabled")
-actual fun PlatformMapHost(modifier: Modifier) {
+actual fun PlatformMapHost(modifier: Modifier, markers: List<MapMarker>) {
     val webViewState = remember { mutableStateOf<WebView?>(null) }
     val mapTilerApiKey = stringResource(R.string.maptiler_api_key)
+    val html = remember(markers, mapTilerApiKey) { androidMapHtml(mapTilerApiKey, markers) }
 
     Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         AndroidView(
@@ -36,12 +45,19 @@ actual fun PlatformMapHost(modifier: Modifier) {
                     settings.domStorageEnabled = true
                     loadDataWithBaseURL(
                         "https://localhost/",
-                        androidMapHtml(mapTilerApiKey),
+                        html,
                         "text/html",
                         "UTF-8",
                         null,
                     )
+                    tag = html
                     webViewState.value = this
+                }
+            },
+            update = { webView ->
+                if (webView.tag != html) {
+                    webView.loadDataWithBaseURL("https://localhost/", html, "text/html", "UTF-8", null)
+                    webView.tag = html
                 }
             },
         )
@@ -59,8 +75,26 @@ actual fun PlatformMapHost(modifier: Modifier) {
     }
 }
 
-private fun androidMapHtml(mapTilerApiKey: String): String =
-    """
+@Composable
+actual fun rememberLocationPermissionGranted(): Boolean {
+    val context = LocalContext.current
+    var granted by remember { mutableStateOf(false) }
+
+    LaunchedEffect(context) {
+        val fine = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+        val coarse = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+        granted = fine || coarse
+    }
+
+    return granted
+}
+
+private fun androidMapHtml(mapTilerApiKey: String, markers: List<MapMarker>): String {
+    val markersJson = markers.joinToString(",", prefix = "[", postfix = "]") {
+        "{id:\"${it.id}\",lat:${it.latitude},lng:${it.longitude},title:\"${it.title.replace("\"", "\\\"")}\"}"
+    }
+
+    return """
     <!doctype html>
     <html>
       <head>
@@ -128,6 +162,15 @@ private fun androidMapHtml(mapTilerApiKey: String): String =
 
           map.addControl(new maplibregl.NavigationControl(), "top-right");
 
+          const markers = $markersJson;
+          markers.forEach((item) => {
+            const popup = new maplibregl.Popup({ offset: 20 }).setText(item.title || "Reported issue");
+            new maplibregl.Marker({ color: "#FF3D00" })
+              .setLngLat([item.lng, item.lat])
+              .setPopup(popup)
+              .addTo(map);
+          });
+
           map.on("load", () => {
 
             const style = map.getStyle();
@@ -156,4 +199,5 @@ private fun androidMapHtml(mapTilerApiKey: String): String =
       </body>
     </html>
     """.trimIndent()
+}
 

@@ -9,11 +9,14 @@ import org.jetbrains.compose.resources.stringResource
 import gel.composeapp.generated.resources.*
 import androidx.navigation.NavType
 import androidx.navigation.toRoute
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import kotlinx.serialization.Serializable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import androidx.lifecycle.viewmodel.compose.viewModel
+import kronos.project.domain.model.AuthState
 import kronos.project.presentation.*
 import kronos.project.util.changeLanguage
 import kronos.project.ui.theme.CivicLensTheme
@@ -24,6 +27,8 @@ import kotlin.reflect.typeOf
 @Serializable object Map
 @Serializable object Profile
 @Serializable object Settings
+@Serializable object Login
+@Serializable object Register
 
 @Composable
 fun App() {
@@ -33,18 +38,52 @@ fun App() {
 
     // We apply the language change BEFORE the UI tries to recompose with it
     changeLanguage(language.code)
+    val authViewModel: AuthViewModel = viewModel { AuthViewModel() }
+    val authState by authViewModel.authState.collectAsState()
+    val authError by authViewModel.error.collectAsState()
 
     CivicLensTheme(darkTheme = darkTheme) {
         val navController = rememberNavController()
+        val startDestination: Any = when (authState) {
+            AuthState.Loading -> Login
+            AuthState.Unauthenticated -> Login
+            is AuthState.Authenticated -> Map
+        }
+
+        LaunchedEffect(authState) {
+            when (authState) {
+                AuthState.Loading -> Unit
+                AuthState.Unauthenticated -> navController.navigate(Login) {
+                    popUpTo<Login> { inclusive = true }
+                }
+                is AuthState.Authenticated -> navController.navigate(Map) {
+                    popUpTo<Login> { inclusive = true }
+                }
+            }
+        }
 
         NavHost(
             navController = navController,
-            startDestination = Map,
+            startDestination = startDestination,
             enterTransition = { fadeIn(animationSpec = tween(400)) },
             exitTransition = { fadeOut(animationSpec = tween(400)) },
             popEnterTransition = { fadeIn(animationSpec = tween(400)) },
             popExitTransition = { fadeOut(animationSpec = tween(400)) }
         ) {
+            composable<Login> {
+                LoginScreen(
+                    error = authError,
+                    onLogin = { email, password -> authViewModel.login(email, password) },
+                    onGoToRegister = { navController.navigate(Register) },
+                )
+            }
+            composable<Register> {
+                RegisterScreen(
+                    error = authError,
+                    onRegister = { username, email, password -> authViewModel.register(username, email, password) },
+                    onGoToLogin = { navController.popBackStack() },
+                )
+            }
             composable<Map> {
                 key(language) {
                     MapScreen(
@@ -96,7 +135,8 @@ fun App() {
                 key(language) {
                     ProfileScreen(
                         onBack = { navController.popBackStack() },
-                        onSettingsClick = { navController.navigate(Settings) }
+                        onSettingsClick = { navController.navigate(Settings) },
+                        onLogout = { authViewModel.logout() },
                     )
                 }
             }
