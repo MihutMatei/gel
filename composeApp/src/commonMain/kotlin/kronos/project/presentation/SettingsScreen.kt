@@ -1,5 +1,6 @@
 package kronos.project.presentation
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -12,14 +13,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.foundation.clickable
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import gel.composeapp.generated.resources.*
 import kronos.project.Dependencies
 import kronos.project.Language
 import kronos.project.domain.model.UserRole
-import gel.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -82,13 +81,13 @@ fun SettingsScreen(onBack: () -> Unit) {
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            if (!saveError.isNullOrBlank()) {
-                Text(
-                    text = saveError ?: "Failed to save settings",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error,
-                )
-            }
+//            if (!saveError.isNullOrBlank()) {
+//                Text(
+//                    text = saveError ?: "Failed to save settings",
+//                    style = MaterialTheme.typography.bodySmall,
+//                    color = MaterialTheme.colorScheme.error,
+//                )
+//            }
 
             // Theme Section
             Text(

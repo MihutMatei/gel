@@ -7,27 +7,28 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Lens
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.viewmodel.compose.viewModel
-import gel.composeapp.generated.resources.*
-import org.jetbrains.compose.resources.stringResource
-import kronos.project.map.FakeMapFacade
-import kronos.project.MapScreen as PlatformMapScreen
+import gel.composeapp.generated.resources.Res
+import gel.composeapp.generated.resources.app_name
+import kronos.project.map.MapDefaults
 import kronos.project.map.MapMarker
 import kronos.project.map.MapMarkerCard
 import kronos.project.map.MapThreadPost
+import org.jetbrains.compose.resources.stringResource
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
@@ -267,14 +268,14 @@ private fun AnimatedFAB(
 @Composable
 fun MapScreen(
     onIssueClick: (String) -> Unit,
-    onCreateIssue: (String, String) -> Unit,
+    onCreateIssue: (Double, Double) -> Unit,
     onProfileClick: () -> Unit,
     pinViewModel: PinViewModel = viewModel { PinViewModel() },
 ) {
     val pins by pinViewModel.pins.collectAsState()
     val loading by pinViewModel.loading.collectAsState()
     val error by pinViewModel.error.collectAsState()
-    val lifecycleOwner = LocalLifecycleOwner.current
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
@@ -333,7 +334,7 @@ fun MapScreen(
                     icon = { Icon(Icons.Default.MyLocation, contentDescription = "Refresh pins") },
                 )
                 AnimatedFAB(
-                    onClick = { onCreateIssue("44.4396", "26.0963") },
+                    onClick = { onCreateIssue(44.4396, 26.0963) },
                     icon = { Icon(Icons.Default.Add, contentDescription = null) },
                     text = { Text("Report Issue") },
                 )

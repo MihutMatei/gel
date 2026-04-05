@@ -4,23 +4,16 @@ import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.*
-import androidx.compose.ui.platform.LocalLayoutDirection
-import org.jetbrains.compose.resources.stringResource
-import gel.composeapp.generated.resources.*
-import androidx.navigation.NavType
-import androidx.navigation.toRoute
-import androidx.navigation.NavGraph.Companion.findStartDestination
-import kotlinx.serialization.Serializable
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.toRoute
+import kotlinx.serialization.Serializable
 import kronos.project.domain.model.AuthState
 import kronos.project.presentation.*
-import kronos.project.util.changeLanguage
 import kronos.project.ui.theme.CivicLensTheme
-import kotlin.reflect.typeOf
+import kronos.project.util.changeLanguage
 
 @Serializable data class CreateIssue(val lat: String, val lon: String)
 @Serializable data class IssueDetail(val id: String)
@@ -90,7 +83,7 @@ fun App() {
                 key(language) {
                     MapScreen(
                         onIssueClick = { id -> navController.navigate(IssueDetail(id)) },
-                        onCreateIssue = { lat, lon -> navController.navigate(CreateIssue(lat, lon)) },
+                        onCreateIssue = { lat, lon -> navController.navigate(CreateIssue(lat.toString(), lon.toString())) },
                         onProfileClick = { navController.navigate(Profile) }
                     )
                 }
