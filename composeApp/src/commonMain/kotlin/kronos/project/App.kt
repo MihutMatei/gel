@@ -32,6 +32,7 @@ fun App() {
     // We apply the language change BEFORE the UI tries to recompose with it
     changeLanguage(language.code)
     val authViewModel: AuthViewModel = viewModel { AuthViewModel() }
+    val pinViewModel: PinViewModel = viewModel { PinViewModel() }
     val authState by authViewModel.authState.collectAsState()
     val authError by authViewModel.error.collectAsState()
 
@@ -86,6 +87,7 @@ fun App() {
             composable<Map> {
                 key(language) {
                     MapScreen(
+                        pinViewModel = pinViewModel,
                         onIssueClick = { id -> navController.navigate(IssueDetail(id)) },
                         onCreateIssue = { lat, lon -> navController.navigate(CreateIssue(lat.toString(), lon.toString())) },
                         onProfileClick = { navController.navigate(Profile) }
@@ -110,7 +112,10 @@ fun App() {
                         latitude = args.lat,
                         longitude = args.lon,
                         onBack = { navController.popBackStack() },
-                        onIssueCreated = { navController.popBackStack() }
+                        onIssueCreated = {
+                            pinViewModel.refreshPins()
+                            navController.popBackStack()
+                        }
                     )
                 }
             }

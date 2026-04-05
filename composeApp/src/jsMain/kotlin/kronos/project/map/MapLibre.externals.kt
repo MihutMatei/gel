@@ -4,7 +4,7 @@ package kronos.project.map
 
 external interface MapOptions {
     var container: String
-    var style: String
+    var style: dynamic
     var center: Array<Double>
     var zoom: Double
     var pitch: Double
@@ -27,6 +27,7 @@ external object MapLibreGl {
         fun on(event: String, listener: (dynamic) -> Unit)
         fun addLayer(layer: LayerSpec, beforeId: String = definedExternally)
         fun addSource(id: String, source: dynamic)
+        fun setStyle(style: dynamic)
         fun remove()
         fun getStyle(): dynamic
         fun resize()

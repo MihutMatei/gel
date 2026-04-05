@@ -1,6 +1,7 @@
 package kronos.project
 
 import io.ktor.http.HttpMethod
+import io.ktor.http.HttpHeaders
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.*
 import io.ktor.server.auth.Authentication
@@ -38,12 +39,16 @@ fun Application.module(initDb: Boolean = true, jwtConfigOverride: JwtConfig? = n
 
     install(CORS) {
         anyHost()
-        allowHeader(io.ktor.http.HttpHeaders.ContentType)
+        allowHeader(HttpHeaders.ContentType)
+        allowHeader(HttpHeaders.Authorization)
+        allowHeader(HttpHeaders.Accept)
+        allowHeader(HttpHeaders.Origin)
         allowMethod(HttpMethod.Get)
         allowMethod(HttpMethod.Post)
         allowMethod(HttpMethod.Put)
         allowMethod(HttpMethod.Patch)
         allowMethod(HttpMethod.Delete)
+        allowMethod(HttpMethod.Options)
     }
 
     install(Authentication) {

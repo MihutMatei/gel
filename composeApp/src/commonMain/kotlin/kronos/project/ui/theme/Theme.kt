@@ -58,24 +58,24 @@ private val DarkColorScheme = darkColorScheme(
 
 @Composable
 fun CivicLensTypography(): Typography {
-    val interFontFamily = FontFamily(Font(Res.font.inter))
+    val cleanFontFamily = FontFamily(Font(Res.font.inter))
     val defaultTypography = Typography()
     return Typography(
-        displayLarge = defaultTypography.displayLarge.copy(fontFamily = interFontFamily),
-        displayMedium = defaultTypography.displayMedium.copy(fontFamily = interFontFamily),
-        displaySmall = defaultTypography.displaySmall.copy(fontFamily = interFontFamily),
-        headlineLarge = defaultTypography.headlineLarge.copy(fontFamily = interFontFamily),
-        headlineMedium = defaultTypography.headlineMedium.copy(fontFamily = interFontFamily),
-        headlineSmall = defaultTypography.headlineSmall.copy(fontFamily = interFontFamily),
-        titleLarge = defaultTypography.titleLarge.copy(fontFamily = interFontFamily),
-        titleMedium = defaultTypography.titleMedium.copy(fontFamily = interFontFamily),
-        titleSmall = defaultTypography.titleSmall.copy(fontFamily = interFontFamily),
-        bodyLarge = defaultTypography.bodyLarge.copy(fontFamily = interFontFamily),
-        bodyMedium = defaultTypography.bodyMedium.copy(fontFamily = interFontFamily),
-        bodySmall = defaultTypography.bodySmall.copy(fontFamily = interFontFamily),
-        labelLarge = defaultTypography.labelLarge.copy(fontFamily = interFontFamily),
-        labelMedium = defaultTypography.labelMedium.copy(fontFamily = interFontFamily),
-        labelSmall = defaultTypography.labelSmall.copy(fontFamily = interFontFamily)
+        displayLarge = defaultTypography.displayLarge.copy(fontFamily = cleanFontFamily),
+        displayMedium = defaultTypography.displayMedium.copy(fontFamily = cleanFontFamily),
+        displaySmall = defaultTypography.displaySmall.copy(fontFamily = cleanFontFamily),
+        headlineLarge = defaultTypography.headlineLarge.copy(fontFamily = cleanFontFamily),
+        headlineMedium = defaultTypography.headlineMedium.copy(fontFamily = cleanFontFamily),
+        headlineSmall = defaultTypography.headlineSmall.copy(fontFamily = cleanFontFamily),
+        titleLarge = defaultTypography.titleLarge.copy(fontFamily = cleanFontFamily),
+        titleMedium = defaultTypography.titleMedium.copy(fontFamily = cleanFontFamily),
+        titleSmall = defaultTypography.titleSmall.copy(fontFamily = cleanFontFamily),
+        bodyLarge = defaultTypography.bodyLarge.copy(fontFamily = cleanFontFamily),
+        bodyMedium = defaultTypography.bodyMedium.copy(fontFamily = cleanFontFamily),
+        bodySmall = defaultTypography.bodySmall.copy(fontFamily = cleanFontFamily),
+        labelLarge = defaultTypography.labelLarge.copy(fontFamily = cleanFontFamily),
+        labelMedium = defaultTypography.labelMedium.copy(fontFamily = cleanFontFamily),
+        labelSmall = defaultTypography.labelSmall.copy(fontFamily = cleanFontFamily)
     )
 }
 

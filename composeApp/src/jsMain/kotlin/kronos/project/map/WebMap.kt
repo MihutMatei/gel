@@ -2,6 +2,8 @@ package kronos.project.map
 
 import kotlinx.browser.window
 
+private const val FALLBACK_STYLE_URL = "https://demotiles.maplibre.org/style.json"
+
 class WebMapHandle(private val map: MapLibreGl.Map) {
     private val activeMarkers = mutableListOf<dynamic>()
 
@@ -87,33 +89,36 @@ fun createBucharestMap(containerId: String): WebMapHandle? {
         return null
     }
 
-    val key = ((window.asDynamic().MAPTILER_API_KEY as? String)
-        ?: (window.asDynamic().MAPTILER_KEY as? String)
-        ?: "").trim()
-
     val options = js("({})").unsafeCast<MapOptions>()
     options.container = containerId
 
-    options.style = if (key.isBlank()) {
-        window.asDynamic().console.warn(
-            "MAPTILER_API_KEY is missing. Falling back to a public OSM style so the app remains usable."
-        )
-        "https://demotiles.maplibre.org/style.json"
-    } else {
-        withMapTilerKey(MapDefaults.styleUrl)
-    }
+    // Use raster tiles as the primary web style to avoid vector worker/style edge-cases.
+    val preferredStyle: dynamic = createOsmRasterStyle()
+    options.style = preferredStyle
 
     options.center = arrayOf(MapDefaults.centerLongitude, MapDefaults.centerLatitude)
     options.zoom = MapDefaults.zoom
-    options.pitch = MapDefaults.pitch
-    options.bearing = MapDefaults.bearing
-    options.antialias = true
+    // Keep web map in 2D to avoid WebGL context instability on some browsers/GPUs.
+    options.pitch = 0.0
+    options.bearing = 0.0
+    // Web/WASM environments can lose context with aggressive GL settings.
+    options.antialias = false
     options.asDynamic().attributionControl = false
 
     val map = MapLibreGl.Map(options)
+    var fallbackStep = 0
 
     map.on("error") { err ->
         window.asDynamic().console.error("MapLibre error", err)
+        if (fallbackStep == 0) {
+            fallbackStep = 1
+            window.asDynamic().console.warn("Map style failed to load. Falling back to MapLibre demo style.")
+            map.setStyle(FALLBACK_STYLE_URL)
+        } else if (fallbackStep == 1) {
+            fallbackStep = 2
+            window.asDynamic().console.warn("Demo style failed too. Falling back to OSM raster style.")
+            map.setStyle(createOsmRasterStyle())
+        }
     }
 
     map.addControl(
@@ -123,10 +128,32 @@ fun createBucharestMap(containerId: String): WebMapHandle? {
         "top-right",
     )
     map.on("load") {
-        addExtrudedBuildings(map)
+        // Intentionally no 3D extrusion layer on web.
     }
 
     return WebMapHandle(map)
+}
+
+private fun createOsmRasterStyle(): dynamic {
+    val style = js("({})")
+    style.version = 8
+    style.name = "osm-raster-fallback"
+
+    val sources = js("({})")
+    val osm = js("({})")
+    osm.type = "raster"
+    osm.tiles = arrayOf("https://tile.openstreetmap.org/{z}/{x}/{y}.png")
+    osm.tileSize = 256
+    sources.osm = osm
+    style.sources = sources
+
+    val layer = js("({})")
+    layer.id = "osm-raster"
+    layer.type = "raster"
+    layer.source = "osm"
+    style.layers = arrayOf(layer)
+
+    return style
 }
 
 private fun withMapTilerKey(styleUrl: String): String {
