@@ -4,10 +4,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import kotlinx.datetime.Clock
 import kronos.project.Dependencies
 import kronos.project.domain.model.Comment
 import kronos.project.domain.model.IssueStatus
+import kronos.project.util.newIdFromTime
+import kronos.project.util.nowInstant
 
 class IssueDetailViewModel(val issueId: String) : ViewModel() {
     val issue = Dependencies.getIssueById(issueId)
@@ -28,11 +29,11 @@ class IssueDetailViewModel(val issueId: String) : ViewModel() {
         if (text.isBlank()) return
         viewModelScope.launch {
             val comment = Comment(
-                id = Clock.System.now().toEpochMilliseconds().toString(),
+                id = newIdFromTime(),
                 issueId = issueId,
                 text = text,
                 authorRole = currentUserRole.value,
-                createdAt = Clock.System.now()
+                createdAt = nowInstant()
             )
             Dependencies.addComment(comment)
         }

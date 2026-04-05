@@ -1,7 +1,6 @@
 package kronos.project
 
 import androidx.compose.animation.*
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -36,20 +35,22 @@ fun App() {
 
     CivicLensTheme(darkTheme = darkTheme) {
         val navController = rememberNavController()
-        val startDestination: Any = when (authState) {
-            AuthState.Loading -> Login
-            AuthState.Unauthenticated -> Login
-            is AuthState.Authenticated -> Map
-        }
+        val startDestination: Any = Login
 
         LaunchedEffect(authState) {
             when (authState) {
                 AuthState.Loading -> Unit
                 AuthState.Unauthenticated -> navController.navigate(Login) {
-                    popUpTo<Login> { inclusive = true }
+                    popUpTo(navController.graph.findStartDestination().id) {
+                        inclusive = false
+                    }
+                    launchSingleTop = true
                 }
                 is AuthState.Authenticated -> navController.navigate(Map) {
-                    popUpTo<Login> { inclusive = true }
+                    popUpTo(navController.graph.findStartDestination().id) {
+                        inclusive = false
+                    }
+                    launchSingleTop = true
                 }
             }
         }
@@ -57,10 +58,6 @@ fun App() {
         NavHost(
             navController = navController,
             startDestination = startDestination,
-            enterTransition = { fadeIn(animationSpec = tween(400)) },
-            exitTransition = { fadeOut(animationSpec = tween(400)) },
-            popEnterTransition = { fadeIn(animationSpec = tween(400)) },
-            popExitTransition = { fadeOut(animationSpec = tween(400)) }
         ) {
             composable<Login> {
                 LoginScreen(
@@ -86,16 +83,10 @@ fun App() {
                 )
             }
             composable<CreateIssue>(
-                enterTransition = {
-                    slideInVertically(initialOffsetY = { it }, animationSpec = tween(500)) + fadeIn()
-                },
-                exitTransition = {
-                    slideOutVertically(targetOffsetY = { it }, animationSpec = tween(500)) + fadeOut()
-                },
-                popEnterTransition = { fadeIn() },
-                popExitTransition = {
-                    slideOutVertically(targetOffsetY = { it }, animationSpec = tween(500)) + fadeOut()
-                }
+                enterTransition = { null },
+                exitTransition = { null },
+                popEnterTransition = { null },
+                popExitTransition = { null },
             ) { backStackEntry ->
                 val args: CreateIssue = backStackEntry.toRoute()
                 CreateIssueScreen(
@@ -106,12 +97,8 @@ fun App() {
                 )
             }
             composable<IssueDetail>(
-                enterTransition = {
-                    fadeIn(animationSpec = tween(600)) + expandHorizontally()
-                },
-                exitTransition = {
-                    fadeOut(animationSpec = tween(600)) + shrinkHorizontally()
-                }
+                enterTransition = { null },
+                exitTransition = { null },
             ) { backStackEntry ->
                 val args: IssueDetail = backStackEntry.toRoute()
                 IssueDetailScreen(

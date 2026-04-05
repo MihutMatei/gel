@@ -27,7 +27,16 @@ actual fun PlatformMapHost(modifier: Modifier, markers: List<MapMarker>) {
         containerState.value = containerRef
 
         if (mapState.value == null) {
-            mapState.value = createBucharestMap(containerRef.element.id)
+            val mapHandle = runCatching { createBucharestMap(containerRef.element.id) }
+                .onFailure { error ->
+                    println("Failed to initialize web map: ${error.message}")
+                    if (containerRef.createdByCompose) {
+                        containerRef.element.remove()
+                    }
+                    containerState.value = null
+                }
+                .getOrNull()
+            mapState.value = mapHandle
         }
 
         onDispose {
@@ -57,7 +66,20 @@ private fun ensureMapContainer(id: String): MapContainerRef {
 
     val container = document.createElement("div") as HTMLElement
     container.id = id
-    document.body?.appendChild(container)
+    container.style.position = "fixed"
+    container.style.top = "0"
+    container.style.right = "0"
+    container.style.bottom = "0"
+    container.style.left = "0"
+    // Keep the map underneath Compose content to avoid covering the app UI.
+    container.style.zIndex = "-1"
+
+    val root = document.getElementById("root")
+    val body = document.body
+    if (root != null && body != null) {
+        body.insertBefore(container, root)
+    } else {
+        body?.appendChild(container)
+    }
     return MapContainerRef(container, createdByCompose = true)
 }
-

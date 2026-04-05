@@ -21,13 +21,13 @@ fun loadDotEnv(rootDir: File): Map<String, String> {
 
 val dotEnv = loadDotEnv(rootProject.projectDir)
 val mapTilerApiKey = (dotEnv["MAPTILER_API_KEY"] ?: System.getenv("MAPTILER_API_KEY") ?: "").trim()
+val backendBaseUrl = (dotEnv["BACKEND_BASE_URL"] ?: System.getenv("BACKEND_BASE_URL") ?: "").trim()
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
-    alias(libs.plugins.composeHotReload)
     id("org.jetbrains.kotlin.plugin.serialization") version "2.3.20"
 }
 
@@ -60,8 +60,6 @@ kotlin {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
-            implementation("org.jetbrains.androidx.core:core-bundle:1.0.1")
-            implementation("org.jetbrains.androidx.savedstate:savedstate:1.4.0")
             implementation(libs.kotlinx.coroutinesCore)
             implementation(libs.kotlinx.datetime)
             implementation(libs.kotlinx.serializationJson)
@@ -70,7 +68,7 @@ kotlin {
             implementation(libs.ktor.serializationKotlinxJson)
             implementation("com.russhwolf:multiplatform-settings-no-arg:1.2.0")
             implementation(libs.navigation.compose)
-            implementation("org.jetbrains.compose.material:material-icons-extended:1.7.1")
+            implementation(compose.materialIconsExtended)
             implementation(projects.shared)
         }
         commonTest.dependencies {
@@ -79,6 +77,7 @@ kotlin {
         jvmMain.dependencies {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutinesSwing)
+            implementation(libs.logback)
             implementation("io.ktor:ktor-client-cio:3.4.1")
             implementation("org.openjfx:javafx-base:$javafxVersion:$javafxPlatform")
             implementation("org.openjfx:javafx-graphics:$javafxVersion:$javafxPlatform")
@@ -94,6 +93,10 @@ android {
     namespace = "kronos.project"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
 
+    buildFeatures {
+        buildConfig = true
+    }
+
     defaultConfig {
         applicationId = "kronos.project"
         minSdk = libs.versions.android.minSdk.get().toInt()
@@ -101,6 +104,7 @@ android {
         versionCode = 1
         versionName = "1.0"
         resValue("string", "maptiler_api_key", mapTilerApiKey)
+        buildConfigField("String", "BACKEND_BASE_URL", "\"$backendBaseUrl\"")
     }
     packaging {
         resources {

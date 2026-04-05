@@ -3,11 +3,12 @@ package kronos.project.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.*
-import kotlinx.datetime.Clock
 import kronos.project.Dependencies
 import kronos.project.domain.model.Issue
 import kronos.project.domain.model.IssueStatus
 import kronos.project.domain.model.UserRole
+import kronos.project.util.newIdFromTime
+import kronos.project.util.nowInstant
 
 class CreateIssueViewModel : ViewModel() {
     suspend fun createIssue(
@@ -18,7 +19,7 @@ class CreateIssueViewModel : ViewModel() {
         longitude: Double
     ) {
         val newIssue = Issue(
-            id = Clock.System.now().toEpochMilliseconds().toString(),
+            id = newIdFromTime(),
             title = title,
             description = description,
             category = category,
@@ -26,7 +27,7 @@ class CreateIssueViewModel : ViewModel() {
             longitude = longitude,
             status = IssueStatus.OPEN,
             authorRole = Dependencies.currentUserRole.value,
-            createdAt = Clock.System.now()
+            createdAt = nowInstant()
         )
         Dependencies.createIssue(newIssue)
         if (Dependencies.currentUserRole.value == UserRole.CITIZEN) {

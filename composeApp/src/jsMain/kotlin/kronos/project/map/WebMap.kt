@@ -44,7 +44,10 @@ private fun withMapTilerKey(styleUrl: String): String {
         ?: (window.asDynamic().MAPTILER_KEY as? String)
         ?: ""
 
-    if (key.isBlank()) return styleUrl
+    if (key.isBlank()) {
+        // Keep web map usable in dev when no key is injected.
+        return "https://demotiles.maplibre.org/style.json"
+    }
     val separator = if (styleUrl.contains("?")) "&" else "?"
     return "$styleUrl${separator}key=$key"
 }

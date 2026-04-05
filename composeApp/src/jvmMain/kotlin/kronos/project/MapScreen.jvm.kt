@@ -3,7 +3,11 @@ package kronos.project
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.awt.SwingPanel
 import javafx.embed.swing.JFXPanel
@@ -19,21 +23,25 @@ import kronos.project.map.MapMarker
 actual fun PlatformMapHost(modifier: Modifier, markers: List<MapMarker>) {
     val mapTilerApiKey = remember { resolveDesktopMapTilerKey() }
     val html = remember(markers, mapTilerApiKey) { desktopMapHtml(mapTilerApiKey, markers) }
+    var panel by remember { mutableStateOf<DesktopMapPanel?>(null) }
 
     SwingPanel(
         modifier = modifier.fillMaxSize(),
         factory = {
             DesktopMapPanel().apply {
-                loadHtml(html)
+                panel = this
             }
         },
-        update = {
-            it.loadHtml(html)
-        },
+        update = {},
     )
+
+    LaunchedEffect(panel, html) {
+        panel?.loadHtml(html)
+    }
 
     DisposableEffect(Unit) {
         onDispose {
+            panel = null
             Platform.runLater {
                 Platform.setImplicitExit(false)
             }

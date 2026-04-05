@@ -4,11 +4,11 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
-import kotlinx.datetime.Clock
 import kronos.project.domain.model.Issue
 import kronos.project.domain.model.IssueStatus
 import kronos.project.domain.model.UserRole
 import kronos.project.domain.repository.IssueRepository
+import kronos.project.util.nowInstant
 
 class FakeIssueRepository : IssueRepository {
     private val _issues = MutableStateFlow<List<Issue>>(
@@ -22,7 +22,7 @@ class FakeIssueRepository : IssueRepository {
                 longitude = 26.1025,
                 status = IssueStatus.OPEN,
                 authorRole = UserRole.CITIZEN,
-                createdAt = Clock.System.now()
+                createdAt = nowInstant()
             ),
             Issue(
                 id = "2",
@@ -33,7 +33,7 @@ class FakeIssueRepository : IssueRepository {
                 longitude = 26.0963,
                 status = IssueStatus.IN_PROGRESS,
                 authorRole = UserRole.CITIZEN,
-                createdAt = Clock.System.now()
+                createdAt = nowInstant()
             ),
             Issue(
                 id = "3",
@@ -44,7 +44,7 @@ class FakeIssueRepository : IssueRepository {
                 longitude = 26.1067,
                 status = IssueStatus.OPEN,
                 authorRole = UserRole.CITIZEN,
-                createdAt = Clock.System.now()
+                createdAt = nowInstant()
             ),
             Issue(
                 id = "4",
@@ -55,7 +55,7 @@ class FakeIssueRepository : IssueRepository {
                 longitude = 26.1150,
                 status = IssueStatus.RESOLVED,
                 authorRole = UserRole.TOWNHALL_EMPLOYEE,
-                createdAt = Clock.System.now()
+                createdAt = nowInstant()
             )
         )
     )
