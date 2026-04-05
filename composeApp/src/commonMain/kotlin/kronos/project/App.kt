@@ -3,18 +3,23 @@ package kronos.project
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
+import androidx.compose.ui.platform.LocalLayoutDirection
+import org.jetbrains.compose.resources.stringResource
+import gel.composeapp.generated.resources.*
+import androidx.navigation.NavType
 import androidx.navigation.toRoute
 import kotlinx.serialization.Serializable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import kronos.project.presentation.*
+import kronos.project.util.changeLanguage
 import kronos.project.ui.theme.CivicLensTheme
+import kotlin.reflect.typeOf
 
-@Serializable data class CreateIssue(val lat: Double, val lon: Double)
+@Serializable data class CreateIssue(val lat: String, val lon: String)
 @Serializable data class IssueDetail(val id: String)
 @Serializable object Map
 @Serializable object Profile
@@ -24,6 +29,10 @@ import kronos.project.ui.theme.CivicLensTheme
 fun App() {
     val isDarkModeSetting by Dependencies.isDarkMode.collectAsState()
     val darkTheme = isDarkModeSetting ?: isSystemInDarkTheme()
+    val language by Dependencies.currentLanguage.collectAsState()
+
+    // We apply the language change BEFORE the UI tries to recompose with it
+    changeLanguage(language.code)
 
     CivicLensTheme(darkTheme = darkTheme) {
         val navController = rememberNavController()
@@ -37,11 +46,13 @@ fun App() {
             popExitTransition = { fadeOut(animationSpec = tween(400)) }
         ) {
             composable<Map> {
-                MapScreen(
-                    onIssueClick = { id -> navController.navigate(IssueDetail(id)) },
-                    onCreateIssue = { lat, lon -> navController.navigate(CreateIssue(lat, lon)) },
-                    onProfileClick = { navController.navigate(Profile) }
-                )
+                key(language) {
+                    MapScreen(
+                        onIssueClick = { id -> navController.navigate(IssueDetail(id)) },
+                        onCreateIssue = { lat, lon -> navController.navigate(CreateIssue(lat, lon)) },
+                        onProfileClick = { navController.navigate(Profile) }
+                    )
+                }
             }
             composable<CreateIssue>(
                 enterTransition = {
@@ -55,13 +66,15 @@ fun App() {
                     slideOutVertically(targetOffsetY = { it }, animationSpec = tween(500)) + fadeOut()
                 }
             ) { backStackEntry ->
-                val args: CreateIssue = backStackEntry.toRoute()
-                CreateIssueScreen(
-                    latitude = args.lat,
-                    longitude = args.lon,
-                    onBack = { navController.popBackStack() },
-                    onIssueCreated = { navController.popBackStack() }
-                )
+                key(language) {
+                    val args: CreateIssue = backStackEntry.toRoute()
+                    CreateIssueScreen(
+                        latitude = args.lat,
+                        longitude = args.lon,
+                        onBack = { navController.popBackStack() },
+                        onIssueCreated = { navController.popBackStack() }
+                    )
+                }
             }
             composable<IssueDetail>(
                 enterTransition = {
@@ -71,22 +84,28 @@ fun App() {
                     fadeOut(animationSpec = tween(600)) + shrinkHorizontally()
                 }
             ) { backStackEntry ->
-                val args: IssueDetail = backStackEntry.toRoute()
-                IssueDetailScreen(
-                    issueId = args.id,
-                    onBack = { navController.popBackStack() }
-                )
+                key(language) {
+                    val args: IssueDetail = backStackEntry.toRoute()
+                    IssueDetailScreen(
+                        issueId = args.id,
+                        onBack = { navController.popBackStack() }
+                    )
+                }
             }
             composable<Profile> {
-                ProfileScreen(
-                    onBack = { navController.popBackStack() },
-                    onSettingsClick = { navController.navigate(Settings) }
-                )
+                key(language) {
+                    ProfileScreen(
+                        onBack = { navController.popBackStack() },
+                        onSettingsClick = { navController.navigate(Settings) }
+                    )
+                }
             }
             composable<Settings> {
-                SettingsScreen(
-                    onBack = { navController.popBackStack() }
-                )
+                key(language) {
+                    SettingsScreen(
+                        onBack = { navController.popBackStack() }
+                    )
+                }
             }
         }
     }

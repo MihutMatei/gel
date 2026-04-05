@@ -12,7 +12,7 @@ class FakeGamificationRepository : GamificationRepository {
             points = 450,
             level = 4,
             totalReports = 12,
-            badges = listOf("First Report", "Community Helper"),
+            badges = listOf("first_report", "active_citizen"),
             monthlyHistory = mapOf(
                 "Jan" to 2,
                 "Feb" to 5,
@@ -53,10 +53,12 @@ class FakeGamificationRepository : GamificationRepository {
         val current = _state.value
         val newBadges = current.badges.toMutableSet()
         
-        if (current.totalReports >= 1 && !newBadges.contains("First Report")) newBadges.add("First Report")
-        if (current.totalReports >= 10 && !newBadges.contains("Active Citizen")) newBadges.add("Active Citizen")
-        if (current.points >= 500 && !newBadges.contains("Bronze Hero")) newBadges.add("Bronze Hero")
-        if (current.points >= 1000 && !newBadges.contains("Silver Hero")) newBadges.add("Silver Hero")
+        if (current.totalReports >= 1 && !newBadges.contains("first_report")) newBadges.add("first_report")
+        if (current.totalReports >= 5 && !newBadges.contains("urban_explorer")) newBadges.add("urban_explorer")
+        if (current.totalReports >= 10 && !newBadges.contains("active_citizen")) newBadges.add("active_citizen")
+        if (current.totalReports >= 25 && !newBadges.contains("community_hero")) newBadges.add("community_hero")
+        if (current.points >= 500 && !newBadges.contains("problem_solver")) newBadges.add("problem_solver")
+        if (current.points >= 1000 && !newBadges.contains("top_contributor")) newBadges.add("top_contributor")
         
         if (newBadges.size > current.badges.size) {
             _state.value = current.copy(badges = newBadges.toList())

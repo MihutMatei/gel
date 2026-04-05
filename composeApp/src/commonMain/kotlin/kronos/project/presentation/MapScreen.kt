@@ -16,6 +16,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import gel.composeapp.generated.resources.*
+import org.jetbrains.compose.resources.stringResource
 import kronos.project.map.FakeMapFacade
 import kronos.project.map.MapMarker
 
@@ -61,7 +63,7 @@ fun AnimatedFAB(
 @Composable
 fun MapScreen(
     onIssueClick: (String) -> Unit,
-    onCreateIssue: (Double, Double) -> Unit,
+    onCreateIssue: (String, String) -> Unit,
     onProfileClick: () -> Unit,
     viewModel: MapViewModel = viewModel { MapViewModel() }
 ) {
@@ -80,7 +82,7 @@ fun MapScreen(
                             modifier = Modifier.size(24.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("CivicLens", fontWeight = FontWeight.ExtraBold)
+                        Text(stringResource(Res.string.app_name), fontWeight = FontWeight.ExtraBold)
                     }
                 },
                 actions = {
@@ -91,7 +93,7 @@ fun MapScreen(
                         ) {
                             Icon(
                                 Icons.Default.Person,
-                                contentDescription = "Profile",
+                                contentDescription = stringResource(Res.string.profile),
                                 modifier = Modifier.padding(4.dp)
                             )
                         }
@@ -108,13 +110,13 @@ fun MapScreen(
                     onClick = { /* My Location Action */ },
                     containerColor = MaterialTheme.colorScheme.surface,
                     contentColor = MaterialTheme.colorScheme.primary,
-                    icon = { Icon(Icons.Default.MyLocation, contentDescription = "My Location") }
+                    icon = { Icon(Icons.Default.MyLocation, contentDescription = stringResource(Res.string.my_location)) }
                 )
 
                 AnimatedFAB(
-                    onClick = { onCreateIssue(44.4396, 26.0963) },
+                    onClick = { onCreateIssue("44.4396", "26.0963") },
                     icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                    text = { Text("Report Issue") },
+                    text = { Text(stringResource(Res.string.report_issue)) },
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary
                 )
@@ -128,7 +130,7 @@ fun MapScreen(
                     MapMarker(it.id, it.latitude, it.longitude, it.title)
                 },
                 onMarkerClick = { marker -> onIssueClick(marker.id) },
-                onMapClick = { lat, lon -> onCreateIssue(lat, lon) }
+                onMapClick = { lat, lon -> onCreateIssue(lat.toString(), lon.toString()) }
             )
 
             // Search Bar Placeholder
@@ -147,7 +149,7 @@ fun MapScreen(
                 ) {
                     Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.outline)
                     Spacer(modifier = Modifier.width(12.dp))
-                    Text("Search for issues nearby...", color = MaterialTheme.colorScheme.outline)
+                    Text(stringResource(Res.string.search_nearby), color = MaterialTheme.colorScheme.outline)
                 }
             }
         }
