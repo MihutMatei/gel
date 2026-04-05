@@ -25,9 +25,14 @@ import kronos.project.map.MapDefaults
 import kronos.project.map.MapMarker
 import kronos.project.map.MapMarkerCard
 import kronos.project.map.MapThreadPost
+import kotlin.math.PI
+import kotlin.math.cos
+import kotlin.math.sin
+import kotlin.math.sqrt
+import kotlin.random.Random
 import kronos.project.MapScreen as PlatformMapScreen
 
-private val demoMarkers = listOf(
+private val demoMarkerTemplates = listOf(
     MapMarker(
         id = "demo-cluster-1",
         latitude = MapDefaults.centerLatitude,
@@ -151,6 +156,78 @@ private val demoMarkers = listOf(
         ),
     ),
 )
+
+private const val BUCHAREST_MIN_LAT = 44.33
+private const val BUCHAREST_MAX_LAT = 44.54
+private const val BUCHAREST_MIN_LON = 25.95
+private const val BUCHAREST_MAX_LON = 26.25
+private const val MAX_DEMO_MARKERS = 100
+private const val DEMO_MIN_DISTANCE_METERS = 120.0
+private const val DEMO_CANDIDATE_ATTEMPTS = 20_000
+private const val DEMO_SPAWN_RADIUS_METERS = 4_500.0
+private const val DEMO_PIN_RANDOM_SEED = 20260405
+
+private val demoMarkers = generateBucharestDemoMarkers(demoMarkerTemplates)
+
+private data class DemoPoint(
+    val latitude: Double,
+    val longitude: Double,
+)
+
+private fun generateBucharestDemoMarkers(templates: List<MapMarker>): List<MapMarker> {
+    if (templates.isEmpty()) return emptyList()
+
+    val random = Random(DEMO_PIN_RANDOM_SEED)
+    val acceptedPoints = mutableListOf<DemoPoint>()
+    var attempts = 0
+
+    while (acceptedPoints.size < MAX_DEMO_MARKERS && attempts < DEMO_CANDIDATE_ATTEMPTS) {
+        val candidate = randomDemoPoint(random)
+        val canPlace = acceptedPoints.all { existing ->
+            distanceMeters(existing, candidate) >= DEMO_MIN_DISTANCE_METERS
+        }
+        if (canPlace) {
+            acceptedPoints += candidate
+        }
+        attempts++
+    }
+
+    // Fallback keeps count stable even if the radius constraint is too strict for the selected bbox.
+    while (acceptedPoints.size < MAX_DEMO_MARKERS) {
+        acceptedPoints += randomDemoPoint(random)
+    }
+
+    val templateOffset = random.nextInt(templates.size)
+    return acceptedPoints.mapIndexed { index, point ->
+        val template = templates[(templateOffset + index) % templates.size]
+        template.copy(
+            id = "demo-distributed-$index-${template.id}",
+            latitude = point.latitude,
+            longitude = point.longitude,
+        )
+    }
+}
+
+private fun randomDemoPoint(random: Random): DemoPoint {
+    val angle = random.nextDouble(0.0, PI * 2.0)
+    val radius = sqrt(random.nextDouble()) * DEMO_SPAWN_RADIUS_METERS
+    val lonMetersAtCenter = 111_320.0 * cos(MapDefaults.centerLatitude * PI / 180.0).coerceAtLeast(0.2)
+
+    val latOffset = (radius * cos(angle)) / 111_320.0
+    val lonOffset = (radius * sin(angle)) / lonMetersAtCenter
+
+    return DemoPoint(
+        latitude = (MapDefaults.centerLatitude + latOffset).coerceIn(BUCHAREST_MIN_LAT, BUCHAREST_MAX_LAT),
+        longitude = (MapDefaults.centerLongitude + lonOffset).coerceIn(BUCHAREST_MIN_LON, BUCHAREST_MAX_LON),
+    )
+}
+
+private fun distanceMeters(a: DemoPoint, b: DemoPoint): Double {
+    val avgLatRadians = ((a.latitude + b.latitude) * 0.5) * PI / 180.0
+    val dLatMeters = (a.latitude - b.latitude) * 111_320.0
+    val dLonMeters = (a.longitude - b.longitude) * 111_320.0 * cos(avgLatRadians).coerceAtLeast(0.2)
+    return sqrt((dLatMeters * dLatMeters) + (dLonMeters * dLonMeters))
+}
 
 @Composable
 private fun AnimatedFAB(
