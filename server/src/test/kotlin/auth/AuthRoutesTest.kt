@@ -24,6 +24,7 @@ import kronos.project.dto.LoginResponse
 import kronos.project.models.CommentsTable
 import kronos.project.models.PinImagesTable
 import kronos.project.models.PinsTable
+import kronos.project.models.UserSettingsTable
 import kronos.project.models.UsersTable
 import kronos.project.module
 import kronos.project.security.JwtConfig
@@ -47,6 +48,8 @@ class AuthRoutesTest {
                 """
                 {
                   "username": "alice_user",
+                  "firstName": "Alice",
+                  "lastName": "Doe",
                   "email": "alice@example.com",
                   "password": "strongpass123"
                 }
@@ -137,6 +140,8 @@ class AuthRoutesTest {
                 """
                 {
                   "username": "$username",
+                  "firstName": "Test",
+                  "lastName": "User",
                   "email": "$email",
                   "password": "$password"
                 }
@@ -170,8 +175,8 @@ class AuthRoutesTest {
 
         DatabaseFactory.init(dbConfig)
         DatabaseFactory.dbQuery {
-            SchemaUtils.drop(PinImagesTable, CommentsTable, PinsTable, UsersTable)
-            SchemaUtils.create(UsersTable, PinsTable, CommentsTable, PinImagesTable)
+            SchemaUtils.drop(PinImagesTable, CommentsTable, PinsTable, UserSettingsTable, UsersTable)
+            SchemaUtils.create(UsersTable, UserSettingsTable, PinsTable, CommentsTable, PinImagesTable)
         }
 
         application {

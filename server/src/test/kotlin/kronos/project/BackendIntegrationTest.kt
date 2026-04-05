@@ -68,6 +68,8 @@ class BackendIntegrationTest {
             val registerBody = """
                 {
                   "username": "dummy_user",
+                  "firstName": "Dummy",
+                  "lastName": "User",
                   "email": "dummy-user@example.com",
                   "password": "dummy-password"
                 }

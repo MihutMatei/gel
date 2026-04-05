@@ -4,13 +4,14 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kronos.project.domain.model.GamificationState
+import kronos.project.domain.model.LevelCurve
 import kronos.project.domain.repository.GamificationRepository
 
 class FakeGamificationRepository : GamificationRepository {
     private val _state = MutableStateFlow(
         GamificationState(
             points = 450,
-            level = 4,
+            level = LevelCurve.levelFromPoints(450),
             totalReports = 12,
             badges = listOf("first_report", "active_citizen"),
             monthlyHistory = mapOf(
@@ -28,7 +29,7 @@ class FakeGamificationRepository : GamificationRepository {
 
     override suspend fun awardPoints(points: Int) {
         val newPoints = _state.value.points + points
-        val newLevel = (newPoints / 100) + 1
+        val newLevel = LevelCurve.levelFromPoints(newPoints)
         _state.value = _state.value.copy(points = newPoints, level = newLevel)
         checkBadges()
     }

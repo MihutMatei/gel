@@ -38,6 +38,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import gel.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
 import kronos.project.domain.model.GamificationState
+import kronos.project.domain.model.LevelCurve
 import kronos.project.domain.model.UserRole
 import kronos.project.ui.theme.shimmerLoadingAnimation
 
@@ -51,6 +52,7 @@ fun ProfileScreen(
 ) {
     val gamificationState by viewModel.gamificationState.collectAsState()
     val currentUserRole by viewModel.currentUserRole.collectAsState()
+    val profile by viewModel.userProfile.collectAsState()
 
     Scaffold(
         topBar = {
@@ -106,7 +108,11 @@ fun ProfileScreen(
                 verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
                 item {
-                    HeaderSection(currentUserRole)
+                    HeaderSection(
+                        role = currentUserRole,
+                        displayName = profile?.displayName ?: "Alex Johnson",
+                        username = profile?.username ?: "citizen",
+                    )
                 }
 
                 item {
@@ -116,7 +122,10 @@ fun ProfileScreen(
                 }
 
                 item {
-                    StatsSection()
+                    StatsSection(
+                        reports = (profile?.reports ?: 12).toString(),
+                        resolved = (profile?.resolved ?: 8).toString(),
+                    )
                 }
 
                 item {
@@ -139,7 +148,7 @@ fun ProfileScreen(
 }
 
 @Composable
-fun HeaderSection(role: UserRole) {
+fun HeaderSection(role: UserRole, displayName: String, username: String) {
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -163,13 +172,18 @@ fun HeaderSection(role: UserRole) {
 
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
-                text = "Alex Johnson",
+                text = displayName,
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold
             )
             val roleName = if (role == UserRole.CITIZEN) stringResource(Res.string.citizen) else stringResource(Res.string.townhall_employee)
             Text(
-                text = roleName,
+                text = "@$username",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.outline,
+            )
+            Text(
+                text = role.name.replace("_", " "),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.secondary
             )
@@ -178,22 +192,22 @@ fun HeaderSection(role: UserRole) {
 }
 
 @Composable
-fun StatsSection() {
+fun StatsSection(reports: String, resolved: String) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         StatCard(
             modifier = Modifier.weight(1f),
-            label = stringResource(Res.string.total_reports),
-            value = "12",
+            label = "Reports",
+            value = reports,
             icon = Icons.Default.Description,
             color = MaterialTheme.colorScheme.primary
         )
         StatCard(
             modifier = Modifier.weight(1f),
-            label = stringResource(Res.string.resolved),
-            value = "8",
+            label = "Resolved",
+            value = resolved,
             icon = Icons.Default.TaskAlt,
             color = MaterialTheme.colorScheme.tertiary
         )
@@ -288,7 +302,7 @@ fun GamificationSection(state: GamificationState) {
 
             // Animated XP Bar
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                val progress = (state.points % 100) / 100f
+                val progress = LevelCurve.progressToNextLevel(state.points)
                 val animatedProgress by animateFloatAsState(
                     targetValue = progress,
                     animationSpec = tween(durationMillis = 1500, easing = FastOutSlowInEasing)

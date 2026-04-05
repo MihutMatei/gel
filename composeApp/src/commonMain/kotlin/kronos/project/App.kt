@@ -80,7 +80,9 @@ fun App() {
             composable<Register> {
                 RegisterScreen(
                     error = authError,
-                    onRegister = { username, email, password -> authViewModel.register(username, email, password) },
+                    onRegister = { username, firstName, lastName, email, password ->
+                        authViewModel.register(username, firstName, lastName, email, password)
+                    },
                     onGoToLogin = { navController.popBackStack() },
                 )
             }

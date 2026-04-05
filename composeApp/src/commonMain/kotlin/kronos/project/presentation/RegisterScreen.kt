@@ -23,10 +23,12 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun RegisterScreen(
     error: String?,
-    onRegister: (username: String, email: String, password: String) -> Unit,
+    onRegister: (username: String, firstName: String, lastName: String, email: String, password: String) -> Unit,
     onGoToLogin: () -> Unit,
 ) {
     var username by remember { mutableStateOf("") }
+    var firstName by remember { mutableStateOf("") }
+    var lastName by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
@@ -42,6 +44,22 @@ fun RegisterScreen(
             value = username,
             onValueChange = { username = it },
             label = { Text("Username") },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+        )
+        Spacer(Modifier.height(12.dp))
+        OutlinedTextField(
+            value = firstName,
+            onValueChange = { firstName = it },
+            label = { Text("First name") },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+        )
+        Spacer(Modifier.height(12.dp))
+        OutlinedTextField(
+            value = lastName,
+            onValueChange = { lastName = it },
+            label = { Text("Last name") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
         )
@@ -69,7 +87,7 @@ fun RegisterScreen(
 
         Spacer(Modifier.height(16.dp))
         Button(
-            onClick = { onRegister(username.trim(), email.trim(), password) },
+            onClick = { onRegister(username.trim(), firstName.trim(), lastName.trim(), email.trim(), password) },
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text("Register")

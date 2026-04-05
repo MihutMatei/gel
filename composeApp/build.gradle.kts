@@ -133,6 +133,23 @@ dependencies {
     debugImplementation(libs.compose.uiTooling)
 }
 
+configurations.configureEach {
+    resolutionStrategy {
+        force(
+            "org.jetbrains.kotlinx:kotlinx-datetime:0.6.1",
+            "org.jetbrains.kotlinx:kotlinx-datetime-jvm:0.6.1",
+            "org.jetbrains.androidx.savedstate:savedstate:1.4.0",
+            "org.jetbrains.androidx.savedstate:savedstate-compose:1.4.0",
+        )
+        dependencySubstitution {
+            substitute(module("org.jetbrains.androidx.savedstate:savedstate"))
+                .using(module("androidx.savedstate:savedstate:1.4.0"))
+            substitute(module("org.jetbrains.androidx.savedstate:savedstate-compose"))
+                .using(module("androidx.savedstate:savedstate-compose:1.4.0"))
+        }
+    }
+}
+
 compose.desktop {
     application {
         mainClass = "kronos.project.MainKt"

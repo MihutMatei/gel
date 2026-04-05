@@ -3,8 +3,75 @@ package kronos.project.map
 import kotlinx.browser.window
 
 class WebMapHandle(private val map: MapLibreGl.Map) {
+    private val activeMarkers = mutableListOf<dynamic>()
+
+    fun setMarkers(markers: List<MapMarker>) {
+        clearMarkers()
+
+        val mapLibre = js("globalThis.maplibregl")
+        markers.forEach { marker ->
+            val popup = mapLibre.Popup(js("({ offset: 20 })"))
+            val cardHtml = marker.card?.toPopupHtml()
+            if (cardHtml.isNullOrBlank()) {
+                popup.setText(marker.title.ifBlank { "Reported issue" })
+            } else {
+                popup.setHTML(cardHtml)
+            }
+
+            val markerElement = createStyledMarkerElement(marker.category)
+            val markerView = mapLibre.Marker(js("({ element: markerElement, anchor: 'bottom' })"))
+                .setLngLat(arrayOf(marker.longitude, marker.latitude))
+                .setPopup(popup)
+                .addTo(map)
+
+            activeMarkers.add(markerView)
+        }
+    }
+
+    fun setMapClickHandler(onMapClick: (Double, Double) -> Unit) {
+        map.on("click") { event ->
+            val target = event.asDynamic().originalEvent?.target
+            val clickedMarker = (target?.closest?.call(target, ".maplibregl-marker") != null) as? Boolean ?: false
+            if (clickedMarker) return@on
+
+            val coordinates = event.lngLat
+            onMapClick(coordinates.lat as Double, coordinates.lng as Double)
+        }
+    }
+
     fun destroy() {
+        clearMarkers()
         map.remove()
+    }
+
+    private fun clearMarkers() {
+        activeMarkers.forEach { it.remove() }
+        activeMarkers.clear()
+    }
+}
+
+private fun createStyledMarkerElement(category: String): dynamic {
+    val doc = window.document
+    val element = doc.createElement("div")
+    val color = categoryColor(category)
+    element.setAttribute(
+        "style",
+        "width:22px;height:22px;border-radius:999px;"
+            + "background:linear-gradient(160deg,#ffffff 0%,$color 36%,$color 100%);"
+            + "border:2px solid #1f2937;box-shadow:0 5px 14px rgba(0,0,0,0.42);"
+            + "cursor:pointer;",
+    )
+    return element
+}
+
+private fun categoryColor(category: String): String {
+    return when (category.lowercase()) {
+        "utilities" -> "#255f85"
+        "public transport" -> "#1f7a5f"
+        "parking" -> "#7250d4"
+        "crime / safety" -> "#8b2d2d"
+        "commerce / store access" -> "#7a5a1e"
+        else -> "#3e4c5d"
     }
 }
 
@@ -26,7 +93,12 @@ fun createBucharestMap(containerId: String): WebMapHandle? {
     options.asDynamic().attributionControl = false
 
     val map = MapLibreGl.Map(options)
-    map.addControl(MapLibreGl.NavigationControl(), "top-right")
+    map.addControl(
+        MapLibreGl.NavigationControl(
+            js("({ showZoom: false, showCompass: false })"),
+        ),
+        "top-right",
+    )
     map.on("load") {
         addExtrudedBuildings(map)
     }
@@ -91,3 +163,43 @@ private fun resolveBuildingSource(style: dynamic): String? {
     return sourceKeys.firstOrNull()
 }
 
+private fun MapMarkerCard.toPopupHtml(): String {
+    val titleHtml = title.escapeHtml()
+    val mainAuthorHtml = mainPost.author.escapeHtml()
+    val mainContentHtml = mainPost.content.escapeHtml().replace("\n", "<br/>")
+    val mainVotesHtml = "+${mainPost.upvotes}/-${mainPost.downvotes}".escapeHtml()
+
+    val commentsBlock = if (comments.isEmpty()) {
+        ""
+    } else {
+        comments.joinToString(separator = "") { comment ->
+            val author = comment.author.escapeHtml()
+            val content = comment.content.escapeHtml().replace("\n", "<br/>")
+            val votes = "+${comment.upvotes}/-${comment.downvotes}".escapeHtml()
+            (
+                "<div style='margin-top:8px;padding-top:8px;border-top:1px solid #eceff1;'>"
+                    + "<div style='font-size:11px;color:#5f6368;'>u/$author  $votes</div>"
+                    + "<div style='margin-top:4px;font-size:12px;color:#202124;line-height:1.35;'>$content</div>"
+                    + "</div>"
+                )
+        }
+    }
+
+    return (
+        "<div style='min-width:240px;max-width:300px;padding:2px 4px;'>"
+            + "<div style='font-weight:700;font-size:14px;color:#202124;'>$titleHtml</div>"
+            + "<div style='margin-top:8px;padding:8px;border:1px solid #eceff1;border-radius:8px;background:#f8f9fa;'>"
+            + "<div style='font-size:11px;color:#5f6368;'>u/$mainAuthorHtml  $mainVotesHtml</div>"
+            + "<div style='margin-top:4px;font-size:12px;color:#202124;line-height:1.4;'>$mainContentHtml</div>"
+            + "</div>"
+            + commentsBlock
+            + "</div>"
+        )
+}
+
+private fun String.escapeHtml(): String = this
+    .replace("&", "&amp;")
+    .replace("<", "&lt;")
+    .replace(">", "&gt;")
+    .replace("\"", "&quot;")
+    .replace("'", "&#39;")

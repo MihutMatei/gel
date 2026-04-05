@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.foundation.clickable
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import kronos.project.Dependencies
 import kronos.project.Language
 import kronos.project.domain.model.UserRole
@@ -81,6 +82,14 @@ fun SettingsScreen(onBack: () -> Unit) {
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            if (!saveError.isNullOrBlank()) {
+                Text(
+                    text = saveError ?: "Failed to save settings",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
+
             // Theme Section
             Text(
                 stringResource(Res.string.theme),

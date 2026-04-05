@@ -5,6 +5,8 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class RegisterRequestDto(
     val username: String,
+    val firstName: String,
+    val lastName: String,
     val email: String,
     val password: String,
 )
@@ -19,6 +21,8 @@ data class LoginRequestDto(
 data class AuthUserDto(
     val id: String,
     val username: String,
+    val firstName: String,
+    val lastName: String,
     val email: String,
 )
 
