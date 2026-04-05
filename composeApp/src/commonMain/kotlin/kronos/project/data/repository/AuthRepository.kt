@@ -91,8 +91,8 @@ class AuthRepository(
 private fun AuthUserDto.toDomain(): AuthUser = AuthUser(
     id = id,
     username = username,
-    firstName = firstName,
-    lastName = lastName,
+    firstName = firstName.orEmpty(),
+    lastName = lastName.orEmpty(),
     email = email,
 )
 
