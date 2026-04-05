@@ -18,7 +18,8 @@ class WebMapHandle(private val map: MapLibreGl.Map) {
                 popup.setHTML(cardHtml)
             }
 
-            val markerView = mapLibre.Marker(js("({ color: '#FF3D00' })"))
+            val markerElement = createStyledMarkerElement(marker.category)
+            val markerView = mapLibre.Marker(js("({ element: markerElement, anchor: 'bottom' })"))
                 .setLngLat(arrayOf(marker.longitude, marker.latitude))
                 .setPopup(popup)
                 .addTo(map)
@@ -46,6 +47,31 @@ class WebMapHandle(private val map: MapLibreGl.Map) {
     private fun clearMarkers() {
         activeMarkers.forEach { it.remove() }
         activeMarkers.clear()
+    }
+}
+
+private fun createStyledMarkerElement(category: String): dynamic {
+    val doc = window.document
+    val element = doc.createElement("div")
+    val color = categoryColor(category)
+    element.setAttribute(
+        "style",
+        "width:22px;height:22px;border-radius:999px;"
+            + "background:linear-gradient(160deg,#ffffff 0%,$color 36%,$color 100%);"
+            + "border:2px solid #1f2937;box-shadow:0 5px 14px rgba(0,0,0,0.42);"
+            + "cursor:pointer;",
+    )
+    return element
+}
+
+private fun categoryColor(category: String): String {
+    return when (category.lowercase()) {
+        "utilities" -> "#255f85"
+        "public transport" -> "#1f7a5f"
+        "parking" -> "#7250d4"
+        "crime / safety" -> "#8b2d2d"
+        "commerce / store access" -> "#7a5a1e"
+        else -> "#3e4c5d"
     }
 }
 

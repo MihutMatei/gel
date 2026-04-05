@@ -216,6 +216,7 @@ private fun desktopMapHtml(mapTilerApiKey: String, markers: List<MapMarker>): St
         val mainAuthor = it.card?.mainPost?.author?.toJsStringLiteral().orEmpty()
         val mainContent = it.card?.mainPost?.content?.toJsStringLiteral().orEmpty()
         val mainVotes = it.card?.mainPost?.let { post -> "+${post.upvotes}/-${post.downvotes}" }?.toJsStringLiteral().orEmpty()
+        val category = it.category.toJsStringLiteral()
         val commentsJson = it.card?.comments?.joinToString(",", prefix = "[", postfix = "]") { comment ->
             val author = comment.author.toJsStringLiteral()
             val content = comment.content.toJsStringLiteral()
@@ -223,7 +224,7 @@ private fun desktopMapHtml(mapTilerApiKey: String, markers: List<MapMarker>): St
             "{author:\"$author\",content:\"$content\",votes:\"$votes\"}"
         } ?: "[]"
 
-        "{id:\"${it.id.toJsStringLiteral()}\",lat:${it.latitude},lng:${it.longitude},title:\"${it.title.toJsStringLiteral()}\",cardTitle:\"$cardTitle\",mainAuthor:\"$mainAuthor\",mainContent:\"$mainContent\",mainVotes:\"$mainVotes\",comments:$commentsJson}"
+        "{id:\"${it.id.toJsStringLiteral()}\",lat:${it.latitude},lng:${it.longitude},title:\"${it.title.toJsStringLiteral()}\",category:\"$category\",cardTitle:\"$cardTitle\",mainAuthor:\"$mainAuthor\",mainContent:\"$mainContent\",mainVotes:\"$mainVotes\",comments:$commentsJson}"
     }
 
     return """
@@ -397,6 +398,29 @@ private fun desktopMapHtml(mapTilerApiKey: String, markers: List<MapMarker>): St
             .replace(/\"/g, "&quot;")
             .replace(/'/g, "&#39;");
 
+          const categoryColor = (category) => {
+            const key = String(category || "").toLowerCase();
+            if (key === "utilities") return "#255f85";
+            if (key === "public transport") return "#1f7a5f";
+            if (key === "parking") return "#7250d4";
+            if (key === "crime / safety") return "#8b2d2d";
+            if (key === "commerce / store access") return "#7a5a1e";
+            return "#3e4c5d";
+          };
+
+          const createMarkerElement = (category) => {
+            const color = categoryColor(category);
+            const marker = document.createElement("div");
+            marker.style.width = "22px";
+            marker.style.height = "22px";
+            marker.style.borderRadius = "999px";
+            marker.style.background = `linear-gradient(160deg, #ffffff 0%, ${'$'}{color} 36%, ${'$'}{color} 100%)`;
+            marker.style.border = "2px solid #1f2937";
+            marker.style.boxShadow = "0 5px 14px rgba(0,0,0,0.42)";
+            marker.style.cursor = "pointer";
+            return marker;
+          };
+
           const closeCommentModal = () => {
             activeCommentTargetId = null;
             commentInput.value = "";
@@ -494,7 +518,7 @@ private fun desktopMapHtml(mapTilerApiKey: String, markers: List<MapMarker>): St
             popupById[item.id] = popup;
             popup.on("open", () => requestPinComments(item.id));
 
-            new maplibregl.Marker({ color: "#FF3D00" })
+            new maplibregl.Marker({ element: createMarkerElement(item.category), anchor: "bottom" })
               .setLngLat([item.lng, item.lat])
               .setPopup(popup)
               .addTo(map);

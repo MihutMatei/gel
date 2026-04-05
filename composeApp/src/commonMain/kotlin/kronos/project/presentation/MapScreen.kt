@@ -7,23 +7,25 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.MyLocation
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.viewmodel.compose.viewModel
-import kronos.project.MapScreen as PlatformMapScreen
 import kronos.project.map.MapDefaults
 import kronos.project.map.MapMarker
 import kronos.project.map.MapMarkerCard
 import kronos.project.map.MapThreadPost
+import kronos.project.MapScreen as PlatformMapScreen
 
 private val demoMarkers = listOf(
     MapMarker(
@@ -31,6 +33,7 @@ private val demoMarkers = listOf(
         latitude = MapDefaults.centerLatitude,
         longitude = MapDefaults.centerLongitude,
         title = "Streetlight not working on Calea Victoriei",
+        category = "Utilities",
         card = MapMarkerCard(
             title = "Streetlight not working on Calea Victoriei",
             mainPost = MapThreadPost(
@@ -51,6 +54,7 @@ private val demoMarkers = listOf(
         latitude = MapDefaults.centerLatitude + 0.00022,
         longitude = MapDefaults.centerLongitude - 0.00018,
         title = "Pothole growing near tram line",
+        category = "Public transport",
         card = MapMarkerCard(
             title = "Pothole growing near tram line",
             mainPost = MapThreadPost(
@@ -70,6 +74,7 @@ private val demoMarkers = listOf(
         latitude = MapDefaults.centerLatitude - 0.00019,
         longitude = MapDefaults.centerLongitude + 0.00024,
         title = "Crosswalk paint faded",
+        category = "Crime / safety",
         card = MapMarkerCard(
             title = "Crosswalk paint faded",
             mainPost = MapThreadPost(
@@ -89,6 +94,7 @@ private val demoMarkers = listOf(
         latitude = MapDefaults.centerLatitude + 0.0023,
         longitude = MapDefaults.centerLongitude - 0.0019,
         title = "Overflowing trash bins",
+        category = "Utilities",
         card = MapMarkerCard(
             title = "Overflowing trash bins",
             mainPost = MapThreadPost(
@@ -108,6 +114,7 @@ private val demoMarkers = listOf(
         latitude = MapDefaults.centerLatitude - 0.0027,
         longitude = MapDefaults.centerLongitude + 0.0021,
         title = "Broken traffic signal timing",
+        category = "Public transport",
         card = MapMarkerCard(
             title = "Broken traffic signal timing",
             mainPost = MapThreadPost(
@@ -128,6 +135,7 @@ private val demoMarkers = listOf(
         latitude = MapDefaults.centerLatitude + 0.0031,
         longitude = MapDefaults.centerLongitude + 0.0014,
         title = "Graffiti and vandalized bus shelter",
+        category = "Crime / safety",
         card = MapMarkerCard(
             title = "Graffiti and vandalized bus shelter",
             mainPost = MapThreadPost(
@@ -205,6 +213,7 @@ fun MapScreen(
             latitude = pin.latitude,
             longitude = pin.longitude,
             title = pin.title,
+            category = pin.category,
             card = MapMarkerCard(
                 title = pin.title,
                 mainPost = MapThreadPost(

@@ -21,6 +21,7 @@ data class MapMarker(
     val latitude: Double,
     val longitude: Double,
     val title: String,
+    val category: String = "General",
     val card: MapMarkerCard? = null,
 )
 
