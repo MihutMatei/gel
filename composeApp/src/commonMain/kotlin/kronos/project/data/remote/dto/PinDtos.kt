@@ -25,3 +25,18 @@ data class CreatePinRequestDto(
     val createdBy: String,
 )
 
+@Serializable
+data class CreatePinCommentRequestDto(
+    val authorId: String,
+    val content: String,
+)
+
+@Serializable
+data class PinCommentDto(
+    val id: String,
+    val pinId: String,
+    val authorId: String,
+    val content: String,
+    val createdAt: String,
+)
+

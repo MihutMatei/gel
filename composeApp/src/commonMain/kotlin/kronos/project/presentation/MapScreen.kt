@@ -2,7 +2,6 @@ package kronos.project.presentation
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
@@ -281,19 +280,6 @@ fun MapScreen(
                 )
             }
 
-            if (pins.isNotEmpty()) {
-                Card(
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .padding(start = 16.dp, bottom = 90.dp)
-                        .clickable { onIssueClick(pins.first().id) },
-                ) {
-                    Text(
-                        text = "Latest: ${pins.first().title}",
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                    )
-                }
-            }
         }
     }
 }

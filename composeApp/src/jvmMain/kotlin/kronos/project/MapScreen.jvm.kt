@@ -1,20 +1,23 @@
 package kronos.project
 
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.awt.SwingPanel
 import javafx.application.Platform
 import javafx.embed.swing.JFXPanel
 import javafx.scene.Scene
 import javafx.scene.web.WebView
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kronos.project.data.remote.dto.PinCommentDto
 import kronos.project.map.MapDefaults
 import kronos.project.map.MapMarker
 import java.awt.BorderLayout
 import java.awt.EventQueue
+import java.net.URLDecoder
+import java.nio.charset.StandardCharsets
 import javax.swing.JPanel
 
 @Composable
@@ -24,6 +27,7 @@ actual fun PlatformMapHost(
     onMapClick: (Double, Double) -> Unit,
 ) {
     val mapTilerApiKey = remember { resolveDesktopMapTilerKey() }
+    val scope = rememberCoroutineScope()
     val onMapClickState = rememberUpdatedState(onMapClick)
     val html = remember(markers, mapTilerApiKey) { desktopMapHtml(mapTilerApiKey, markers) }
 
@@ -32,11 +36,75 @@ actual fun PlatformMapHost(
         factory = {
             DesktopMapPanel().apply {
                 setOnMapTapListener { lat, lng -> onMapClickState.value(lat, lng) }
+                setOnSubmitCommentListener { pinId, content ->
+                    scope.launch {
+                        val userId = Dependencies.currentUserId.value
+                        if (userId.isNullOrBlank()) {
+                            pushCommentError("Please login first")
+                            return@launch
+                        }
+
+                        val created = withContext(Dispatchers.IO) {
+                            Dependencies.pinRepository.createPinComment(pinId, userId, content)
+                        }
+
+                        created
+                            .onSuccess { createdComment ->
+                                val comments = withContext(Dispatchers.IO) {
+                                    Dependencies.pinRepository.fetchPinComments(pinId)
+                                }.getOrElse { listOf(createdComment) }
+                                pushCommentsToJs(pinId, comments)
+                            }
+                            .onFailure {
+                                pushCommentError(it.message.orEmpty())
+                            }
+                    }
+                }
+                setOnLoadCommentsListener { pinId ->
+                    scope.launch {
+                        val comments = withContext(Dispatchers.IO) {
+                            Dependencies.pinRepository.fetchPinComments(pinId)
+                        }
+                        comments.onSuccess { pushCommentsToJs(pinId, it) }
+                    }
+                }
                 loadHtml(html)
             }
         },
         update = {
             it.setOnMapTapListener { lat, lng -> onMapClickState.value(lat, lng) }
+            it.setOnSubmitCommentListener { pinId, content ->
+                scope.launch {
+                    val userId = Dependencies.currentUserId.value
+                    if (userId.isNullOrBlank()) {
+                        it.pushCommentError("Please login first")
+                        return@launch
+                    }
+
+                    val created = withContext(Dispatchers.IO) {
+                        Dependencies.pinRepository.createPinComment(pinId, userId, content)
+                    }
+
+                    created
+                        .onSuccess { createdComment ->
+                            val comments = withContext(Dispatchers.IO) {
+                                Dependencies.pinRepository.fetchPinComments(pinId)
+                            }.getOrElse { listOf(createdComment) }
+                            it.pushCommentsToJs(pinId, comments)
+                        }
+                        .onFailure { throwable ->
+                            it.pushCommentError(throwable.message.orEmpty())
+                        }
+                }
+            }
+            it.setOnLoadCommentsListener { pinId ->
+                scope.launch {
+                    val comments = withContext(Dispatchers.IO) {
+                        Dependencies.pinRepository.fetchPinComments(pinId)
+                    }
+                    comments.onSuccess { loaded -> it.pushCommentsToJs(pinId, loaded) }
+                }
+            }
             it.loadHtml(html)
         },
     )
@@ -57,6 +125,8 @@ private class DesktopMapPanel : JPanel(BorderLayout()) {
     private val fxPanel = JFXPanel()
     private var webView: WebView? = null
     private var onMapTap: ((Double, Double) -> Unit)? = null
+    private var onSubmitComment: ((String, String) -> Unit)? = null
+    private var onLoadComments: ((String) -> Unit)? = null
 
     init {
         add(fxPanel, BorderLayout.CENTER)
@@ -65,15 +135,34 @@ private class DesktopMapPanel : JPanel(BorderLayout()) {
             val view = WebView()
             view.engine.setOnAlert { event ->
                 val payload = event.data ?: return@setOnAlert
-                if (!payload.startsWith("GEL_MAP_TAP:")) return@setOnAlert
+                when {
+                    payload.startsWith("GEL_MAP_TAP:") -> {
+                        val coords = payload.removePrefix("GEL_MAP_TAP:").split(',')
+                        if (coords.size != 2) return@setOnAlert
 
-                val coords = payload.removePrefix("GEL_MAP_TAP:").split(',')
-                if (coords.size != 2) return@setOnAlert
+                        val lat = coords[0].toDoubleOrNull() ?: return@setOnAlert
+                        val lng = coords[1].toDoubleOrNull() ?: return@setOnAlert
+                        EventQueue.invokeLater {
+                            onMapTap?.invoke(lat, lng)
+                        }
+                    }
 
-                val lat = coords[0].toDoubleOrNull() ?: return@setOnAlert
-                val lng = coords[1].toDoubleOrNull() ?: return@setOnAlert
-                EventQueue.invokeLater {
-                    onMapTap?.invoke(lat, lng)
+                    payload.startsWith("GEL_COMMENT_SUBMIT:") -> {
+                        val data = payload.removePrefix("GEL_COMMENT_SUBMIT:").split(':', limit = 2)
+                        if (data.size != 2) return@setOnAlert
+                        val pinId = URLDecoder.decode(data[0], StandardCharsets.UTF_8.name())
+                        val content = URLDecoder.decode(data[1], StandardCharsets.UTF_8.name())
+                        EventQueue.invokeLater {
+                            onSubmitComment?.invoke(pinId, content)
+                        }
+                    }
+
+                    payload.startsWith("GEL_COMMENT_LOAD:") -> {
+                        val pinId = URLDecoder.decode(payload.removePrefix("GEL_COMMENT_LOAD:"), StandardCharsets.UTF_8.name())
+                        EventQueue.invokeLater {
+                            onLoadComments?.invoke(pinId)
+                        }
+                    }
                 }
             }
             webView = view
@@ -85,9 +174,31 @@ private class DesktopMapPanel : JPanel(BorderLayout()) {
         onMapTap = listener
     }
 
+    fun setOnSubmitCommentListener(listener: (String, String) -> Unit) {
+        onSubmitComment = listener
+    }
+
+    fun setOnLoadCommentsListener(listener: (String) -> Unit) {
+        onLoadComments = listener
+    }
+
     fun loadHtml(html: String) {
         Platform.runLater {
             webView?.engine?.loadContent(html)
+        }
+    }
+
+    fun pushCommentsToJs(pinId: String, comments: List<PinCommentDto>) {
+        val script = "window.onCommentsLoaded && window.onCommentsLoaded(\"${pinId.toJsStringLiteral()}\", ${comments.toJsCommentsLiteral()});"
+        Platform.runLater {
+            webView?.engine?.executeScript(script)
+        }
+    }
+
+    fun pushCommentError(message: String) {
+        val script = "window.onCommentPersistError && window.onCommentPersistError(\"${message.toJsStringLiteral()}\");"
+        Platform.runLater {
+            webView?.engine?.executeScript(script)
         }
     }
 }
@@ -161,10 +272,75 @@ private fun desktopMapHtml(mapTilerApiKey: String, markers: List<MapMarker>): St
           .maplibregl-ctrl-bottom-left {
             display: none !important;
           }
+
+          #comment-modal-overlay {
+            position: fixed;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.45);
+            z-index: 1000;
+          }
+
+          #comment-modal {
+            width: min(92vw, 360px);
+            background: #ffffff;
+            border-radius: 14px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            padding: 14px;
+            box-sizing: border-box;
+          }
+
+          #comment-input {
+            width: 100%;
+            min-height: 90px;
+            resize: vertical;
+            border: 1px solid #d8dde3;
+            border-radius: 10px;
+            font-size: 13px;
+            padding: 10px;
+            box-sizing: border-box;
+          }
+
+          .comment-modal-actions {
+            margin-top: 10px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+          }
+
+          .comment-modal-btn {
+            border: none;
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 12px;
+            cursor: pointer;
+          }
+
+          .comment-modal-btn.cancel {
+            background: #eef1f4;
+            color: #1f2937;
+          }
+
+          .comment-modal-btn.submit {
+            background: #ff3d00;
+            color: #ffffff;
+          }
         </style>
       </head>
       <body>
         <div id="gel-map"></div>
+        <div id="comment-modal-overlay">
+          <div id="comment-modal">
+            <div style="font-weight:700;font-size:14px;color:#1f2937;margin-bottom:8px;">Add Comment</div>
+            <textarea id="comment-input" placeholder="Share more details..."></textarea>
+            <div class="comment-modal-actions">
+              <button class="comment-modal-btn cancel" onclick="closeCommentModal()">Cancel</button>
+              <button class="comment-modal-btn submit" onclick="submitComment()">Submit</button>
+            </div>
+          </div>
+        </div>
         <script src="https://unpkg.com/maplibre-gl@4.4.1/dist/maplibre-gl.js"></script>
         <script>
           const MAPTILER_API_KEY = "$mapTilerApiKey";
@@ -188,6 +364,14 @@ private fun desktopMapHtml(mapTilerApiKey: String, markers: List<MapMarker>): St
             alert(`GEL_MAP_TAP:${'$'}{lat},${'$'}{lng}`);
           };
 
+          const emitCommentSubmit = (pinId, content) => {
+            alert(`GEL_COMMENT_SUBMIT:${'$'}{encodeURIComponent(pinId)}:${'$'}{encodeURIComponent(content)}`);
+          };
+
+          const emitCommentLoad = (pinId) => {
+            alert(`GEL_COMMENT_LOAD:${'$'}{encodeURIComponent(pinId)}`);
+          };
+
           const isMarkerTarget = (event) => {
             const originalEvent = event && event.originalEvent;
             const target = originalEvent && originalEvent.target;
@@ -195,12 +379,80 @@ private fun desktopMapHtml(mapTilerApiKey: String, markers: List<MapMarker>): St
           };
 
           const markers = $markersJson;
+          const markerById = {};
+          const popupById = {};
+          let activeCommentTargetId = null;
+
+          markers.forEach((item) => {
+            markerById[item.id] = item;
+          });
+
+          const commentModalOverlay = document.getElementById("comment-modal-overlay");
+          const commentInput = document.getElementById("comment-input");
+
           const escapeHtml = (value) => String(value || "")
             .replace(/&/g, "&amp;")
             .replace(/</g, "&lt;")
             .replace(/>/g, "&gt;")
             .replace(/\"/g, "&quot;")
             .replace(/'/g, "&#39;");
+
+          const closeCommentModal = () => {
+            activeCommentTargetId = null;
+            commentInput.value = "";
+            commentModalOverlay.style.display = "none";
+          };
+
+          const openCommentModal = (pinId) => {
+            activeCommentTargetId = pinId;
+            commentInput.value = "";
+            commentModalOverlay.style.display = "flex";
+            setTimeout(() => commentInput.focus(), 0);
+          };
+
+          const submitComment = () => {
+            const pinId = activeCommentTargetId;
+            const text = String(commentInput.value || "").trim();
+            if (!pinId || text.length < 2) return;
+
+            if (typeof emitCommentSubmit === "function") {
+              emitCommentSubmit(pinId, text);
+            } else {
+              const item = markerById[pinId];
+              if (!item) return;
+              if (!Array.isArray(item.comments)) item.comments = [];
+              item.comments.push({ author: "you", content: text, votes: "+0/-0" });
+              const popup = popupById[pinId];
+              if (popup) popup.setHTML(buildCardHtml(item));
+            }
+
+            closeCommentModal();
+          };
+
+          const requestPinComments = (pinId) => {
+            emitCommentLoad(pinId);
+          };
+
+          window.onCommentsLoaded = (pinId, comments) => {
+            const item = markerById[pinId];
+            if (!item) return;
+            item.comments = Array.isArray(comments) ? comments : [];
+            const popup = popupById[pinId];
+            if (popup) popup.setHTML(buildCardHtml(item));
+          };
+
+          window.onCommentPersistError = (_message) => {
+          };
+
+          commentModalOverlay.addEventListener("click", (event) => {
+            if (event.target === commentModalOverlay) {
+              closeCommentModal();
+            }
+          });
+
+          window.openCommentModal = openCommentModal;
+          window.closeCommentModal = closeCommentModal;
+          window.submitComment = submitComment;
 
           const buildCardHtml = (item) => {
             if (!item.cardTitle) return "";
@@ -221,10 +473,13 @@ private fun desktopMapHtml(mapTilerApiKey: String, markers: List<MapMarker>): St
               ? `<div style=\"margin-top:8px;max-height:142px;overflow-y:auto;padding-right:4px;\">${'$'}{commentsHtml}</div>`
               : "";
 
+            const addCommentButton = `<button onclick=\"openCommentModal('${'$'}{escapeHtml(item.id)}')\" style=\"margin-top:10px;width:100%;border:none;border-radius:10px;padding:8px 10px;background:#ff3d00;color:#ffffff;font-size:12px;font-weight:600;cursor:pointer;\">Add Comment</button>`;
+
             return `<div style=\"min-width:250px;max-width:304px;box-sizing:border-box;padding:2px 4px;overflow:hidden;\">`
               + `${'$'}{title}`
               + `<div style=\"margin-top:8px;padding:8px;border:1px solid #eceff1;border-radius:10px;background:#f8f9fa;box-sizing:border-box;\">${'$'}{mainMeta}${'$'}{mainBody}</div>`
               + `${'$'}{commentsSection}`
+              + `${'$'}{addCommentButton}`
               + `</div>`;
           };
 
@@ -236,6 +491,8 @@ private fun desktopMapHtml(mapTilerApiKey: String, markers: List<MapMarker>): St
             } else {
               popup.setText(item.title || "Reported issue");
             }
+            popupById[item.id] = popup;
+            popup.on("open", () => requestPinComments(item.id));
 
             new maplibregl.Marker({ color: "#FF3D00" })
               .setLngLat([item.lng, item.lat])
@@ -283,4 +540,14 @@ private fun String.toJsStringLiteral(): String = this
     .replace("\"", "\\\"")
     .replace("\n", "\\n")
     .replace("\r", "")
+
+private fun List<PinCommentDto>.toJsCommentsLiteral(): String = joinToString(
+    separator = ",",
+    prefix = "[",
+    postfix = "]",
+) { comment ->
+    val author = comment.authorId.toJsStringLiteral()
+    val content = comment.content.toJsStringLiteral()
+    "{author:\"$author\",content:\"$content\",votes:\"+0/-0\"}"
+}
 
