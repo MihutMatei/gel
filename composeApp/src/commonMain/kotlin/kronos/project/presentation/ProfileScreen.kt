@@ -3,6 +3,7 @@ package kronos.project.presentation
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -14,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Comment
 import androidx.compose.material.icons.automirrored.filled.Help
+import androidx.compose.material.icons.automirrored.filled.DirectionsRun
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -33,7 +35,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import kronos.project.Dependencies
+import gel.composeapp.generated.resources.*
+import org.jetbrains.compose.resources.stringResource
 import kronos.project.domain.model.GamificationState
 import kronos.project.domain.model.LevelCurve
 import kronos.project.domain.model.UserRole
@@ -54,10 +57,10 @@ fun ProfileScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Profile Dashboard") },
+                title = { Text(stringResource(Res.string.my_dashboard)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(Res.string.back))
                     }
                 },
                 actions = {
@@ -65,7 +68,7 @@ fun ProfileScreen(
                         Icon(Icons.Default.Logout, contentDescription = "Logout")
                     }
                     IconButton(onClick = onSettingsClick) {
-                        Icon(Icons.Default.Settings, contentDescription = "Settings")
+                        Icon(Icons.Default.Settings, contentDescription = stringResource(Res.string.settings))
                     }
                 }
             )
@@ -133,7 +136,7 @@ fun ProfileScreen(
                     Spacer(modifier = Modifier.height(16.dp))
                     Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                         Text(
-                            "CivicLens Hackathon MVP v0.1",
+                            stringResource(Res.string.hackathon_version),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.outline
                         )
@@ -173,6 +176,7 @@ fun HeaderSection(role: UserRole, displayName: String, username: String) {
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold
             )
+            val roleName = if (role == UserRole.CITIZEN) stringResource(Res.string.citizen) else stringResource(Res.string.townhall_employee)
             Text(
                 text = "@$username",
                 style = MaterialTheme.typography.bodyMedium,
@@ -229,18 +233,22 @@ fun StatCard(modifier: Modifier, label: String, value: String, icon: ImageVector
 fun RecentActivitySection() {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
-            "Recent Activity",
+            stringResource(Res.string.recent_activity),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(start = 4.dp)
         )
         ElevatedCard(modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.padding(8.dp)) {
-                ActivityItem("Reported 'Pothole on Main St'", "2 days ago", Icons.Default.AddCircle)
+                ActivityItem(stringResource(Res.string.pothole_activity), stringResource(Res.string.days_ago, 2), Icons.Default.AddCircle)
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 8.dp))
-                ActivityItem("Commented on 'Park Bench Broken'", "1 week ago", Icons.AutoMirrored.Filled.Comment)
+                ActivityItem(stringResource(Res.string.park_bench_activity), stringResource(Res.string.weeks_ago, 1), Icons.AutoMirrored.Filled.Comment)
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 8.dp))
-                ActivityItem("Earned 'First Responder' Badge", "2 weeks ago", Icons.Default.EmojiEvents)
+                ActivityItem(
+                    stringResource(Res.string.earned_badge_activity, stringResource(Res.string.first_report)),
+                    stringResource(Res.string.weeks_ago, 2),
+                    Icons.Default.EmojiEvents
+                )
             }
         }
     }
@@ -270,13 +278,13 @@ fun GamificationSection(state: GamificationState) {
             ) {
                 Column {
                     Text(
-                        "Level ${state.level}",
+                        stringResource(Res.string.level_stat, state.level),
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.ExtraBold,
                         color = MaterialTheme.colorScheme.primary
                     )
                     Text(
-                        "${state.points} Total Points",
+                        stringResource(Res.string.total_points_stat, state.points),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.outline
                     )
@@ -316,7 +324,7 @@ fun GamificationSection(state: GamificationState) {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        "Progress to Level ${state.level + 1}",
+                        stringResource(Res.string.progress_to_level, state.level + 1),
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -383,35 +391,36 @@ fun GamificationSection(state: GamificationState) {
             HorizontalDivider(modifier = Modifier.alpha(0.3f))
 
             // Badges Grid
-            Text("Achievements", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text(stringResource(Res.string.earned_badges), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             BadgeGrid(state.badges)
 
             HorizontalDivider(modifier = Modifier.alpha(0.3f))
 
             // Reporting History Chart
-            Text("Reporting History", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text(stringResource(Res.string.reporting_history), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             ReportingHistoryChart(state.monthlyHistory)
         }
     }
 }
 
 @Composable
-fun BadgeGrid(earnedBadges: List<String>) {
+fun BadgeGrid(earnedBadgeIds: List<String>) {
     val allBadges = listOf(
-        "First Report" to Icons.Default.CameraAlt,
-        "Active Citizen" to Icons.Default.Groups,
-        "Community Helper" to Icons.Default.Handshake,
-        "Bronze Hero" to Icons.Default.MilitaryTech,
-        "Silver Hero" to Icons.Default.WorkspacePremium,
-        "Top Contributor" to Icons.Default.Star
+        Triple("first_report", Res.string.first_report, Icons.Default.CameraAlt),
+        Triple("urban_explorer", Res.string.urban_explorer, Icons.AutoMirrored.Filled.DirectionsRun),
+        Triple("active_citizen", Res.string.active_citizen, Icons.Default.Groups),
+        Triple("problem_solver", Res.string.problem_solver, Icons.Default.Handshake),
+        Triple("community_hero", Res.string.community_hero, Icons.Default.Shield),
+        Triple("top_contributor", Res.string.top_contributor, Icons.Default.Star)
     )
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         val rows = allBadges.chunked(3)
         rows.forEach { rowBadges ->
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                rowBadges.forEach { (name, icon) ->
-                    val isEarned = earnedBadges.contains(name)
+                rowBadges.forEach { (id, res, icon) ->
+                    val isEarned = earnedBadgeIds.contains(id)
+                    val name = stringResource(res)
                     Column(
                         modifier = Modifier.weight(1f),
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -454,6 +463,14 @@ fun BadgeGrid(earnedBadges: List<String>) {
 @Composable
 fun ReportingHistoryChart(history: Map<String, Int>) {
     val months = listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun")
+    val monthLabels = listOf(
+        stringResource(Res.string.jan),
+        stringResource(Res.string.feb),
+        stringResource(Res.string.mar),
+        stringResource(Res.string.apr),
+        stringResource(Res.string.may),
+        stringResource(Res.string.jun)
+    )
     val data = months.map { history[it] ?: 0 }
     val maxVal = (data.maxOrNull() ?: 1).coerceAtLeast(1)
 
@@ -553,10 +570,10 @@ fun ReportingHistoryChart(history: Map<String, Int>) {
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            months.forEach { month ->
+            monthLabels.forEach { label ->
                 Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
                     Text(
-                        month,
+                        label,
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontWeight = FontWeight.Medium
@@ -568,42 +585,31 @@ fun ReportingHistoryChart(history: Map<String, Int>) {
 }
 
 @Composable
-fun SettingsSection() {
-    val isDarkModeSetting by Dependencies.isDarkMode.collectAsState()
-    
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("Theme", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(start = 4.dp))
-        ListItem(
-            headlineContent = { Text("Dark Mode") },
-            supportingContent = { Text("Toggle between light and dark") },
-            leadingContent = { Icon(if (isDarkModeSetting == true) Icons.Default.DarkMode else Icons.Default.LightMode, contentDescription = null) },
-            trailingContent = { 
-                Switch(
-                    checked = isDarkModeSetting ?: false, // Fallback for system default
-                    onCheckedChange = { isChecked ->
-                        Dependencies.isDarkMode.value = isChecked
-                    }
-                )
-            },
-            modifier = Modifier.fillMaxWidth()
+fun SettingsSection(onSettingsClick: () -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        SettingsItem(
+            modifier = Modifier.clickable { onSettingsClick() },
+            icon = Icons.Default.Settings,
+            title = stringResource(Res.string.account_settings),
+            subtitle = stringResource(Res.string.notifications_privacy)
         )
-
-        Spacer(modifier = Modifier.height(8.dp))
-        Text("Account", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(start = 4.dp))
-        SettingsItem(Icons.Default.Notifications, "Notifications", "Alerts for status updates")
-        SettingsItem(Icons.Default.PrivacyTip, "Privacy", "Manage your visibility")
-        SettingsItem(Icons.AutoMirrored.Filled.Help, "Help & Support", "Get assistance")
-        SettingsItem(Icons.Default.Info, "About", "Learn more about CivicLens")
+        SettingsItem(
+            modifier = Modifier.clickable { onSettingsClick() },
+            icon = Icons.AutoMirrored.Filled.Help,
+            title = stringResource(Res.string.support_about),
+            subtitle = stringResource(Res.string.help_center_legal)
+        )
     }
 }
 
 @Composable
-fun SettingsItem(icon: ImageVector, title: String, subtitle: String) {
-    ListItem(
-        headlineContent = { Text(title) },
-        supportingContent = { Text(subtitle) },
-        leadingContent = { Icon(icon, contentDescription = null) },
-        trailingContent = { Icon(Icons.Default.ChevronRight, contentDescription = null) },
-        modifier = Modifier.fillMaxWidth()
-    )
+fun SettingsItem(modifier: Modifier = Modifier, icon: ImageVector, title: String, subtitle: String) {
+    ElevatedCard(modifier = modifier.fillMaxWidth()) {
+        ListItem(
+            headlineContent = { Text(title) },
+            supportingContent = { Text(subtitle) },
+            leadingContent = { Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+            trailingContent = { Icon(Icons.Default.ChevronRight, contentDescription = null) }
+        )
+    }
 }

@@ -18,31 +18,51 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import gel.composeapp.generated.resources.*
+import org.jetbrains.compose.resources.stringResource
+import gel.composeapp.generated.resources.*
+import kronos.project.util.getCategoryResource
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateIssueScreen(
-    latitude: Double,
-    longitude: Double,
+    latitude: String,
+    longitude: String,
     onBack: () -> Unit,
     onIssueCreated: () -> Unit,
     viewModel: CreateIssueViewModel = viewModel { CreateIssueViewModel() }
 ) {
+    val lat = latitude.toDoubleOrNull() ?: 0.0
+    val lon = longitude.toDoubleOrNull() ?: 0.0
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
-    var category by remember { mutableStateOf("Public transport") }
-    val categories = listOf("Public transport", "Utilities", "Parking", "Crime / safety", "Commerce / store access")
+    
+    var categoryId by remember { mutableStateOf("public_transport") }
+    val categoryIds = remember {
+        listOf(
+            "public_transport",
+            "utilities",
+            "parking",
+            "crime_safety",
+            "commerce_store_access",
+            "road_hazards",
+            "lighting",
+            "sanitation",
+            "infrastructure",
+            "other"
+        )
+    }
     var expanded by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Report New Issue") },
+                title = { Text(stringResource(Res.string.report_new_issue)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(Res.string.back))
                     }
                 }
             )
@@ -57,7 +77,7 @@ fun CreateIssueScreen(
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
             Text(
-                "Provide details about the issue you've encountered.",
+                stringResource(Res.string.provide_details),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.outline
             )
@@ -65,8 +85,8 @@ fun CreateIssueScreen(
             OutlinedTextField(
                 value = title,
                 onValueChange = { if (it.length <= 50) title = it },
-                label = { Text("Issue Name") },
-                placeholder = { Text("e.g., Pothole on Main St") },
+                label = { Text(stringResource(Res.string.short_title)) },
+                placeholder = { Text(stringResource(Res.string.title_placeholder)) },
                 modifier = Modifier.fillMaxWidth(),
                 leadingIcon = { Icon(Icons.Default.Title, contentDescription = null) },
                 trailingIcon = {
@@ -79,7 +99,7 @@ fun CreateIssueScreen(
                 supportingText = {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         if (title.isNotEmpty() && title.length < 5) {
-                            Text("Title too short (min 5 chars)", color = MaterialTheme.colorScheme.error)
+                            Text(stringResource(Res.string.title_too_short_full), color = MaterialTheme.colorScheme.error)
                         } else {
                             Spacer(modifier = Modifier.weight(1f))
                         }
@@ -95,10 +115,10 @@ fun CreateIssueScreen(
                 onExpandedChange = { expanded = !expanded }
             ) {
                 OutlinedTextField(
-                    value = category,
+                    value = stringResource(getCategoryResource(categoryId)),
                     onValueChange = {},
                     readOnly = true,
-                    label = { Text("Type of Problem") },
+                    label = { Text(stringResource(Res.string.category)) },
                     leadingIcon = { Icon(Icons.Default.Category, contentDescription = null) },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                     modifier = Modifier.menuAnchor().fillMaxWidth()
@@ -107,21 +127,25 @@ fun CreateIssueScreen(
                     expanded = expanded,
                     onDismissRequest = { expanded = false }
                 ) {
-                    categories.forEach { cat ->
+                    categoryIds.forEach { id ->
                         DropdownMenuItem(
-                            text = { Text(cat) },
+                            text = { Text(stringResource(getCategoryResource(id))) },
                             onClick = {
-                                category = cat
+                                categoryId = id
                                 expanded = false
                             },
                             leadingIcon = {
                                 Icon(
-                                    when (cat) {
-                                        "Public transport" -> Icons.Default.DirectionsBus
-                                        "Utilities" -> Icons.Default.WaterDrop
-                                        "Parking" -> Icons.Default.LocalParking
-                                        "Crime / safety" -> Icons.Default.Security
-                                        "Commerce / store access" -> Icons.Default.Store
+                                    when (id) {
+                                        "public_transport" -> Icons.Default.DirectionsBus
+                                        "utilities" -> Icons.Default.WaterDrop
+                                        "parking" -> Icons.Default.LocalParking
+                                        "crime_safety" -> Icons.Default.Security
+                                        "commerce_store_access" -> Icons.Default.Store
+                                        "road_hazards" -> Icons.Default.Warning
+                                        "lighting" -> Icons.Default.Lightbulb
+                                        "sanitation" -> Icons.Default.Delete
+                                        "infrastructure" -> Icons.Default.Architecture
                                         else -> Icons.AutoMirrored.Filled.Label
                                     },
                                     contentDescription = null,
@@ -136,8 +160,8 @@ fun CreateIssueScreen(
             OutlinedTextField(
                 value = description,
                 onValueChange = { if (it.length <= 500) description = it },
-                label = { Text("Description") },
-                placeholder = { Text("Describe what's wrong and its impact...") },
+                label = { Text(stringResource(Res.string.detailed_description)) },
+                placeholder = { Text(stringResource(Res.string.description_impact)) },
                 modifier = Modifier.fillMaxWidth(),
                 minLines = 4,
                 leadingIcon = {
@@ -155,7 +179,7 @@ fun CreateIssueScreen(
                 supportingText = {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         if (description.isNotEmpty() && description.length < 20) {
-                            Text("Description too short (min 20 chars)", color = MaterialTheme.colorScheme.error)
+                            Text(stringResource(Res.string.description_too_short_full), color = MaterialTheme.colorScheme.error)
                         } else {
                             Spacer(modifier = Modifier.weight(1f))
                         }
@@ -167,7 +191,7 @@ fun CreateIssueScreen(
 
             // Photo Picker Placeholder
             Text(
-                "Add Photos (optional)",
+                stringResource(Res.string.add_photos_optional),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurface
             )
@@ -187,13 +211,13 @@ fun CreateIssueScreen(
                 ) {
                     Icon(
                         Icons.Default.AddAPhoto,
-                        contentDescription = "Add Photos",
+                        contentDescription = stringResource(Res.string.add_photos),
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(32.dp)
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        "Tap to add photos or drag and drop",
+                        stringResource(Res.string.tap_to_add_photos),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -216,7 +240,7 @@ fun CreateIssueScreen(
                         tint = MaterialTheme.colorScheme.primary
                     )
                     Column {
-                        Text("Tagged Location", style = MaterialTheme.typography.labelLarge)
+                        Text(stringResource(Res.string.tagged_location), style = MaterialTheme.typography.labelLarge)
                         Text(
                             "${latitude.toString().take(8)}, ${longitude.toString().take(8)}",
                             style = MaterialTheme.typography.bodySmall
@@ -238,7 +262,7 @@ fun CreateIssueScreen(
                         loading = true
                         scope.launch {
                             try {
-                                viewModel.createIssue(title, description, category, latitude, longitude)
+                                viewModel.createIssue(title, description, categoryId, lat, lon)
                                 onIssueCreated()
                             } finally {
                                 loading = false
@@ -263,7 +287,7 @@ fun CreateIssueScreen(
                 } else {
                     Icon(Icons.Default.CloudUpload, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Submit Report", style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(Res.string.submit_report), style = MaterialTheme.typography.titleMedium)
                 }
             }
         }

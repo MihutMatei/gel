@@ -16,6 +16,10 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import gel.composeapp.generated.resources.*
+import org.jetbrains.compose.resources.stringResource
+import org.jetbrains.compose.resources.StringResource
+import kronos.project.util.getCategoryResource
 import kronos.project.domain.model.IssueStatus
 import kronos.project.domain.model.UserRole
 import kronos.project.ui.theme.shimmerLoadingAnimation
@@ -38,10 +42,10 @@ fun IssueDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(issue?.title ?: "Loading Issue...") },
+                title = { Text(stringResource(Res.string.issue_details)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(Res.string.back))
                     }
                 }
             )
@@ -108,7 +112,7 @@ fun IssueDetailScreen(
                                     ) {
                                         AssistChip(
                                             onClick = {},
-                                            label = { Text(currentIssue.category) },
+                                            label = { Text(stringResource(getCategoryResource(currentIssue.category))) },
                                             leadingIcon = { Icon(Icons.Default.Category, contentDescription = null, modifier = Modifier.size(AssistChipDefaults.IconSize)) }
                                         )
                                         StatusBadge(currentIssue.status)
@@ -124,33 +128,38 @@ fun IssueDetailScreen(
                                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                         MetadataRow(
                                             icon = Icons.Default.Person,
-                                            label = "Reported by",
-                                            value = currentIssue.authorRole.name
+                                            label = stringResource(Res.string.reported_by),
+                                            value = if (currentIssue.authorRole == UserRole.CITIZEN) stringResource(Res.string.citizen) else stringResource(Res.string.townhall_employee)
                                         )
                                         MetadataRow(
                                             icon = Icons.Default.LocationOn,
-                                            label = "Location",
+                                            label = stringResource(Res.string.location),
                                             value = "${currentIssue.latitude.toString().take(7)}, ${currentIssue.longitude.toString().take(7)}"
                                         )
                                         MetadataRow(
                                             icon = Icons.Default.Event,
-                                            label = "Reported on",
+                                            label = stringResource(Res.string.date),
                                             value = formatInstant(currentIssue.createdAt)
                                         )
                                     }
 
                                     if (currentUserRole == UserRole.TOWNHALL_EMPLOYEE) {
                                         Spacer(modifier = Modifier.height(8.dp))
-                                        Text("Update Status", style = MaterialTheme.typography.labelLarge)
+                                        Text(stringResource(Res.string.status_open), style = MaterialTheme.typography.labelLarge)
                                         Row(
                                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                                             modifier = Modifier.fillMaxWidth()
                                         ) {
-                                            IssueStatus.entries.forEach { status ->
+                                            IssueStatus.entries.forEach { statusEntry ->
+                                                val statusText = when(statusEntry) {
+                                                    IssueStatus.OPEN -> stringResource(Res.string.status_open)
+                                                    IssueStatus.IN_PROGRESS -> stringResource(Res.string.status_in_progress)
+                                                    IssueStatus.RESOLVED -> stringResource(Res.string.status_resolved)
+                                                }
                                                 FilterChip(
-                                                    selected = currentIssue.status == status,
-                                                    onClick = { viewModel.updateStatus(status) },
-                                                    label = { Text(status.name.replace("_", " ")) },
+                                                    selected = currentIssue.status == statusEntry,
+                                                    onClick = { viewModel.updateStatus(statusEntry) },
+                                                    label = { Text(statusText) },
                                                     modifier = Modifier.weight(1f)
                                                 )
                                             }
@@ -163,7 +172,7 @@ fun IssueDetailScreen(
                         item {
                             HorizontalDivider()
                             Spacer(modifier = Modifier.height(8.dp))
-                            Text("Discussion", style = MaterialTheme.typography.titleMedium)
+                            Text(stringResource(Res.string.comments), style = MaterialTheme.typography.titleMedium)
                         }
 
                         items(comments) { comment ->
@@ -188,7 +197,7 @@ fun IssueDetailScreen(
                                 ) {
                                     Column(modifier = Modifier.padding(12.dp)) {
                                         Text(
-                                            if (isTownHall) "Town Hall Official" else "Citizen",
+                                            if (isTownHall) stringResource(Res.string.town_hall_official) else stringResource(Res.string.citizen),
                                             style = MaterialTheme.typography.labelSmall,
                                             fontWeight = FontWeight.Bold,
                                             color = if (isTownHall) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary
@@ -212,7 +221,7 @@ fun IssueDetailScreen(
                             OutlinedTextField(
                                 value = commentText,
                                 onValueChange = { commentText = it },
-                                placeholder = { Text("Add a comment...") },
+                                placeholder = { Text(stringResource(Res.string.add_comment)) },
                                 modifier = Modifier.weight(1f),
                                 shape = RoundedCornerShape(24.dp)
                             )
@@ -229,7 +238,7 @@ fun IssueDetailScreen(
                                     contentColor = MaterialTheme.colorScheme.onPrimary
                                 )
                             ) {
-                                Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send")
+                                Icon(Icons.AutoMirrored.Filled.Send, contentDescription = stringResource(Res.string.send))
                             }
                         }
                     }
@@ -256,8 +265,13 @@ fun StatusBadge(status: IssueStatus) {
         contentColor = contentColor,
         shape = RoundedCornerShape(8.dp)
     ) {
+        val statusText = when (status) {
+            IssueStatus.OPEN -> stringResource(Res.string.status_open)
+            IssueStatus.IN_PROGRESS -> stringResource(Res.string.status_in_progress)
+            IssueStatus.RESOLVED -> stringResource(Res.string.status_resolved)
+        }
         Text(
-            text = status.name.replace("_", " "),
+            text = statusText,
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
             style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.Bold

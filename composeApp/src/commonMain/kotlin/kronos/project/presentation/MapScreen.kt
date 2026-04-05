@@ -21,7 +21,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.viewmodel.compose.viewModel
-import kronos.project.map.MapDefaults
+import gel.composeapp.generated.resources.*
+import org.jetbrains.compose.resources.stringResource
+import kronos.project.map.FakeMapFacade
+import kronos.project.MapScreen as PlatformMapScreen
 import kronos.project.map.MapMarker
 import kronos.project.map.MapMarkerCard
 import kronos.project.map.MapThreadPost
@@ -264,7 +267,7 @@ private fun AnimatedFAB(
 @Composable
 fun MapScreen(
     onIssueClick: (String) -> Unit,
-    onCreateIssue: (Double, Double) -> Unit,
+    onCreateIssue: (String, String) -> Unit,
     onProfileClick: () -> Unit,
     pinViewModel: PinViewModel = viewModel { PinViewModel() },
 ) {
@@ -307,19 +310,10 @@ fun MapScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(28.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)),
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.outline)
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Text("Search for issues nearby...", color = MaterialTheme.colorScheme.outline)
-                        }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Lens, contentDescription = null, modifier = Modifier.size(22.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(stringResource(Res.string.app_name), fontWeight = FontWeight.ExtraBold)
                     }
                 },
                 actions = {
@@ -337,6 +331,11 @@ fun MapScreen(
                 AnimatedFAB(
                     onClick = { pinViewModel.refreshPins() },
                     icon = { Icon(Icons.Default.MyLocation, contentDescription = "Refresh pins") },
+                )
+                AnimatedFAB(
+                    onClick = { onCreateIssue("44.4396", "26.0963") },
+                    icon = { Icon(Icons.Default.Add, contentDescription = null) },
+                    text = { Text("Report Issue") },
                 )
             }
         },
