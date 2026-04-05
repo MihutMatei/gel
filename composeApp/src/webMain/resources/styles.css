@@ -1,6 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
 
-html, body, #root {
+html, body {
     width: 100%;
     height: 100%;
     margin: 0;
@@ -9,9 +9,28 @@ html, body, #root {
     font-family: 'Inter', 'Segoe UI', Roboto, Arial, sans-serif;
 }
 
-#gel-map {
+body {
+    position: relative;
+}
+
+#map-host {
     position: fixed;
     inset: 0;
+    display: block;
+    z-index: 1;
+}
+
+#gel-map {
+    position: absolute;
+    inset: 1;
+}
+
+#root {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    z-index: 0;
+    pointer-events: none;
 }
 
 .maplibregl-ctrl-top-right {

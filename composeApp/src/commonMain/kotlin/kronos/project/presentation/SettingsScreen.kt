@@ -18,7 +18,6 @@ import androidx.compose.ui.unit.dp
 import gel.composeapp.generated.resources.*
 import kronos.project.Dependencies
 import kronos.project.Language
-import kronos.project.domain.model.UserRole
 import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -26,24 +25,21 @@ import org.jetbrains.compose.resources.stringResource
 fun SettingsScreen(onBack: () -> Unit) {
     // Current state from Dependencies
     val currentDarkMode by Dependencies.isDarkMode.collectAsState()
-    val currentRole by Dependencies.currentUserRole.collectAsState()
     val currentLanguage by Dependencies.currentLanguage.collectAsState()
 
     // Local state for pending changes
     var pendingDarkMode by remember { mutableStateOf(currentDarkMode) }
-    var pendingRole by remember { mutableStateOf(currentRole) }
     var pendingLanguage by remember { mutableStateOf(currentLanguage) }
 
     // Synchronize local state when global state changes EXTERNALLY (if needed)
     // But since this is a "save changes" screen, we want to keep current selections until Apply
     LaunchedEffect(currentDarkMode) { pendingDarkMode = currentDarkMode }
-    LaunchedEffect(currentRole) { pendingRole = currentRole }
     LaunchedEffect(currentLanguage) { pendingLanguage = currentLanguage }
 
     val systemInDarkTheme = isSystemInDarkTheme()
     val isCurrentlyDark = pendingDarkMode ?: systemInDarkTheme
 
-    val hasChanges = pendingDarkMode != currentDarkMode || pendingRole != currentRole || pendingLanguage != currentLanguage
+    val hasChanges = pendingDarkMode != currentDarkMode || pendingLanguage != currentLanguage
 
     Scaffold(
         topBar = {
@@ -61,7 +57,6 @@ fun SettingsScreen(onBack: () -> Unit) {
                 ExtendedFloatingActionButton(
                     onClick = {
                         Dependencies.isDarkMode.value = pendingDarkMode
-                        Dependencies.currentUserRole.value = pendingRole
                         Dependencies.currentLanguage.value = pendingLanguage
                     },
                     icon = { Icon(Icons.Default.Check, contentDescription = null) },
@@ -134,31 +129,6 @@ fun SettingsScreen(onBack: () -> Unit) {
                 }
             }
 
-            // User Role Section
-            Text(
-                stringResource(Res.string.account_type),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.Bold
-            )
-            ElevatedCard(modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.padding(8.dp)) {
-                    UserRoleOption(
-                        role = UserRole.CITIZEN,
-                        selected = pendingRole == UserRole.CITIZEN,
-                        language = pendingLanguage,
-                        onClick = { pendingRole = UserRole.CITIZEN }
-                    )
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 8.dp))
-                    UserRoleOption(
-                        role = UserRole.TOWNHALL_EMPLOYEE,
-                        selected = pendingRole == UserRole.TOWNHALL_EMPLOYEE,
-                        language = pendingLanguage,
-                        onClick = { pendingRole = UserRole.TOWNHALL_EMPLOYEE }
-                    )
-                }
-            }
-
             // Other Settings (Placeholders as requested)
             Text(
                 stringResource(Res.string.preferences),
@@ -211,13 +181,13 @@ fun SettingsScreen(onBack: () -> Unit) {
                     }
                     
                     HorizontalDivider(modifier = Modifier.padding(horizontal = 8.dp))
-                    SettingsEntry(Icons.Default.Notifications, stringResource(Res.string.notifications), stringResource(Res.string.alerts_status_updates), pendingLanguage)
+                    SettingsEntry(Icons.Default.Notifications, stringResource(Res.string.notifications), stringResource(Res.string.alerts_status_updates))
                     HorizontalDivider(modifier = Modifier.padding(horizontal = 8.dp))
-                    SettingsEntry(Icons.Default.PrivacyTip, stringResource(Res.string.privacy), stringResource(Res.string.manage_visibility), pendingLanguage)
+                    SettingsEntry(Icons.Default.PrivacyTip, stringResource(Res.string.privacy), stringResource(Res.string.manage_visibility))
                     HorizontalDivider(modifier = Modifier.padding(horizontal = 8.dp))
-                    SettingsEntry(Icons.AutoMirrored.Filled.Help, stringResource(Res.string.help_support), stringResource(Res.string.get_assistance), pendingLanguage)
+                    SettingsEntry(Icons.AutoMirrored.Filled.Help, stringResource(Res.string.help_support), stringResource(Res.string.get_assistance))
                     HorizontalDivider(modifier = Modifier.padding(horizontal = 8.dp))
-                    SettingsEntry(Icons.Default.Info, stringResource(Res.string.about), stringResource(Res.string.version_info), pendingLanguage)
+                    SettingsEntry(Icons.Default.Info, stringResource(Res.string.about), stringResource(Res.string.version_info))
                 }
             }
         }
@@ -225,25 +195,7 @@ fun SettingsScreen(onBack: () -> Unit) {
 }
 
 @Composable
-fun UserRoleOption(role: UserRole, selected: Boolean, language: Language, onClick: () -> Unit) {
-    val roleName = if (role == UserRole.CITIZEN) stringResource(Res.string.citizen) else stringResource(Res.string.townhall_employee)
-    ListItem(
-        headlineContent = { Text(roleName) },
-        leadingContent = {
-            Icon(
-                if (role == UserRole.CITIZEN) Icons.Default.Face else Icons.Default.Work,
-                contentDescription = null
-            )
-        },
-        trailingContent = {
-            RadioButton(selected = selected, onClick = onClick)
-        },
-        modifier = Modifier.fillMaxWidth()
-    )
-}
-
-@Composable
-private fun SettingsEntry(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, subtitle: String, language: Language) {
+private fun SettingsEntry(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, subtitle: String) {
     ListItem(
         headlineContent = { Text(title) },
         supportingContent = { Text(subtitle) },
