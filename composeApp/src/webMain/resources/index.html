@@ -8,11 +8,15 @@
     <link href="https://unpkg.com/maplibre-gl@4.4.1/dist/maplibre-gl.css" rel="stylesheet" />
 </head>
 <body>
+<div id="map-host">
+    <div id="gel-map"></div>
+</div>
 <div id="root"></div>
+
+<script src="runtime-config.js"></script>
 <script>
-    // TODO: replace with your public MapTiler browser key.
-    // TODO: restrict this key by domain/referrer in MapTiler dashboard.
-    window.MAPTILER_API_KEY = "";
+    window.MAPTILER_API_KEY = window.__MAPTILER_API_KEY__ || window.MAPTILER_API_KEY || "";
+    window.__API_BASE_URL__ = window.__API_BASE_URL__ || "";
 </script>
 <script src="https://unpkg.com/maplibre-gl@4.4.1/dist/maplibre-gl.js"></script>
 <script type="application/javascript" src="composeApp.js"></script>

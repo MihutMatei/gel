@@ -1,29 +1,47 @@
 package kronos.project.presentation
 
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Lens
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.SmallFloatingActionButton
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.viewmodel.compose.viewModel
 import gel.composeapp.generated.resources.Res
 import gel.composeapp.generated.resources.app_name
+import kronos.project.MapScreen as PlatformMapScreen
 import kronos.project.map.MapDefaults
 import kronos.project.map.MapMarker
 import kronos.project.map.MapMarkerCard
@@ -34,7 +52,6 @@ import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.math.sqrt
 import kotlin.random.Random
-import kronos.project.MapScreen as PlatformMapScreen
 
 private val demoMarkerTemplates = listOf(
     MapMarker(
@@ -196,7 +213,6 @@ private fun generateBucharestDemoMarkers(templates: List<MapMarker>): List<MapMa
         attempts++
     }
 
-    // Fallback keeps count stable even if the radius constraint is too strict for the selected bbox.
     while (acceptedPoints.size < MAX_DEMO_MARKERS) {
         acceptedPoints += randomDemoPoint(random)
     }
@@ -264,7 +280,6 @@ private fun AnimatedFAB(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MapScreen(
     onIssueClick: (String) -> Unit,
@@ -273,20 +288,6 @@ fun MapScreen(
     pinViewModel: PinViewModel = viewModel { PinViewModel() },
 ) {
     val pins by pinViewModel.pins.collectAsState()
-    val loading by pinViewModel.loading.collectAsState()
-    val error by pinViewModel.error.collectAsState()
-    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
-
-    DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                pinViewModel.refreshPins()
-            }
-        }
-
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
-    }
 
     val liveMarkers = pins.map { pin ->
         MapMarker(
@@ -307,65 +308,65 @@ fun MapScreen(
 
     val markers = (demoMarkers + liveMarkers).distinctBy { it.id }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Lens, contentDescription = null, modifier = Modifier.size(22.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(stringResource(Res.string.app_name), fontWeight = FontWeight.ExtraBold)
-                    }
-                },
-                actions = {
-                    IconButton(onClick = onProfileClick) {
-                        Surface(shape = RoundedCornerShape(20.dp)) {
-                            Icon(Icons.Default.Person, contentDescription = "Profile", modifier = Modifier.padding(4.dp))
-                        }
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+    Box(modifier = Modifier.fillMaxSize()) {
+        PlatformMapScreen(
+            modifier = Modifier.fillMaxSize(),
+            markers = markers,
+            onMapClick = { lat, long ->
+                onCreateIssue(lat, long)
+            }
+        )
+
+        Row(
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .statusBarsPadding()
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                Icons.Default.Lens,
+                contentDescription = null,
+                modifier = Modifier.size(22.dp),
+                tint = MaterialTheme.colorScheme.onSurface
             )
-        },
-        floatingActionButton = {
-            Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                AnimatedFAB(
-                    onClick = { pinViewModel.refreshPins() },
-                    icon = { Icon(Icons.Default.MyLocation, contentDescription = "Refresh pins") },
-                )
-                AnimatedFAB(
-                    onClick = { onCreateIssue(44.4396, 26.0963) },
-                    icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                    text = { Text("Report Issue") },
-                )
-            }
-        },
-    ) { padding ->
-        Box(modifier = Modifier.fillMaxSize()) {
-            PlatformMapScreen(
-                modifier = Modifier.fillMaxSize(),
-                markers = markers,
-                onMapClick = { lat, long ->
-                    onCreateIssue(lat, long)
-                }
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = stringResource(Res.string.app_name),
+                fontWeight = FontWeight.ExtraBold,
+                color = MaterialTheme.colorScheme.onSurface
             )
-
-            if (loading) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-            }
-
-            if (!error.isNullOrBlank()) {
-                Text(
-                    text = error ?: "Failed to fetch pins",
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .padding(top = padding.calculateTopPadding() + 64.dp)
-                        .background(MaterialTheme.colorScheme.surface)
-                        .padding(8.dp),
-                )
-            }
-
         }
+
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .statusBarsPadding()
+                .padding(16.dp)
+        ) {
+            IconButton(onClick = onProfileClick) {
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = Color(0xFFB0B7C3)
+                ) {
+                    Icon(
+                        Icons.Default.Person,
+                        contentDescription = "Profile",
+                        modifier = Modifier.padding(6.dp),
+                        tint = Color(0xFF4B5563)
+                    )
+                }
+            }
+        }
+
+        AnimatedFAB(
+            onClick = { onCreateIssue(44.4396, 26.0963) },
+            icon = { Icon(Icons.Default.Add, contentDescription = null) },
+            text = { Text("Add request") },
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .navigationBarsPadding()
+                .padding(16.dp)
+        )
     }
 }

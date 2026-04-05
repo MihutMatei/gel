@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gel</title>
+    <link type="text/css" rel="stylesheet" href="styles.css">
+    <link href="https://unpkg.com/maplibre-gl@4.4.1/dist/maplibre-gl.css" rel="stylesheet" />
+</head>
+<body>
+<div id="root"></div>
+<script src="runtime-config.js"></script>
+<script>
+    // MapTiler key for MapLibre styles.
+    // runtime-config.js sets window.__MAPTILER_API_KEY__ / window.__API_BASE_URL__ when available.
+    window.MAPTILER_API_KEY = window.__MAPTILER_API_KEY__ || window.MAPTILER_API_KEY || "";
+
+    // Optional: override API base URL
+    window.__API_BASE_URL__ = window.__API_BASE_URL__ || "";
+</script>
+<script src="https://unpkg.com/maplibre-gl@4.4.1/dist/maplibre-gl.js"></script>
+<script type="application/javascript" src="composeApp.js"></script>
+</body>
+</html>
